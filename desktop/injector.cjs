@@ -30,26 +30,30 @@ function themeFile(key) {
 }
 
 function createInjector({ core, detect, config = () => readJson(path.join(HOME, 'config.json'), {}), log = () => {} }) {
-  const inFlight = new Map()
 
+  // Free and keyless, like the extension: a starter theme from the motifs and
+  // icon pack, or the one Claude designed in a chat (a ```skinshift block).
   async function themeFor(info) {
     if (!info) return null
     const cfg = config()
-    if (info.kind === 'chat' && !cfg.themeChats) return null
+    if (info.kind === 'chat' && !cfg.themeChats && !info.design) return null
     const file = themeFile(info.key)
     const saved = readJson(file, null)
-    if (saved && saved.off) return null
-    if (saved) return core.normalizeTheme(saved)
-    if (cfg.auto === false || !info.idea) return null
-    if (!inFlight.has(info.key)) {
-      const complete = cfg.apiKey ? core.anthropicComplete({ apiKey: cfg.apiKey, model: cfg.model }) : undefined
-      inFlight.set(info.key, core.generateTheme({ idea: info.idea, projectName: info.name, complete }).then(({ theme, source }) => {
-        fs.mkdirSync(THEMES, { recursive: true })
-        fs.writeFileSync(file, JSON.stringify({ ...theme, key: info.key, projectName: info.name, source }, null, 2))
-        return theme
-      }).finally(() => inFlight.delete(info.key)))
+    const opts = { resolveIcon: core.resolveIcon }
+    const store = (theme, extra) => {
+      fs.mkdirSync(THEMES, { recursive: true })
+      fs.writeFileSync(file, JSON.stringify({ ...theme, key: info.key, projectName: info.name, ...extra }, null, 2))
+      return theme
     }
-    return inFlight.get(info.key)
+    if (info.design && (!saved || saved.designId !== info.design.id)) {
+      const json = core.extractDesignBlock(info.design.text)
+      if (json) return store(core.normalizeTheme({ ...json, idea: info.idea }, { idea: info.idea, ...opts }), { source: 'claude', designId: info.design.id })
+    }
+    if (saved && saved.off) return null
+    if (saved) return core.normalizeTheme(saved, opts)
+    if (cfg.auto === false || !info.idea) return null
+    const { theme } = await core.generateTheme({ idea: info.idea, projectName: info.name, ...opts })
+    return store(theme, { source: 'motif' })
   }
 
   function attach(wc) {
@@ -62,14 +66,15 @@ function createInjector({ core, detect, config = () => readJson(path.join(HOME, 
         const url = new URL(wc.getURL())
         const info = url.hostname === 'claude.ai' ? await detect(wc) : null
         if (mine !== seq) return
-        if (info && appliedFor === info.key) return
+        const tag = info ? `${info.key}#${info.design ? info.design.id : ''}` : null
+        if (tag && appliedFor === tag) return
         const theme = await themeFor(info)
         if (mine !== seq) return
         if (cssKey) {
           await wc.removeInsertedCSS(cssKey)
           cssKey = null
         }
-        appliedFor = theme ? info.key : null
+        appliedFor = theme ? tag : null
         if (theme) {
           cssKey = await wc.insertCSS(core.toClaudeAiCss(theme), { cssOrigin: 'user' })
           await wc.executeJavaScript(`document.documentElement.setAttribute('data-skinshift', ${JSON.stringify(theme.id)})`)

@@ -1,4 +1,4 @@
-import { renderPattern, svgDataUri } from './core/index.js'
+import { iconSvg, logoSvg, renderPattern, svgDataUri } from './core/index.js'
 
 const $ = id => document.getElementById(id)
 const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
@@ -10,34 +10,30 @@ try {
 function show(theme) {
   if (!theme) return
   $('title').textContent = theme.name
-  $('logo').innerHTML = theme.logo.replace(/currentColor/g, theme.palette.accent)
+  $('logo').innerHTML = logoSvg(theme, 30)
   $('swatches').innerHTML = Object.values(theme.palette).map(c => `<span style="background:${c}"></span>`).join('')
   $('strip').style.backgroundImage = `url("${svgDataUri(renderPattern(theme.pattern, theme.palette).svg)}")`
-  $('glyphs').textContent = theme.glyphs.join(' ')
+  $('icons').innerHTML = theme.icons.map(name => iconSvg(name, { color: theme.palette.accent, size: 22 })).join('')
 }
 
 if (!state) {
   $('design').disabled = $('off').disabled = true
 } else {
+  const where = state.info.kind === 'project' ? 'Project' : 'Chat'
+  const source = state.theme?.source === 'claude' ? 'designed by Claude' : 'starter theme'
   $('status').textContent = state.theme
-    ? `${state.info.kind === 'project' ? 'Project' : 'Chat'}: ${state.info.name || 'untitled'} · ${state.theme.motif} motif`
+    ? `${where}: ${state.info.name || 'untitled'} · ${source}`
     : `${state.info.name || 'This project'} has no theme yet.`
   show(state.theme)
 }
 
 $('design').onclick = async () => {
-  $('design').disabled = true
-  $('status').textContent = 'Designing…'
-  const info = { ...state.info, idea: $('idea').value.trim() || state.info.idea }
-  const res = await chrome.runtime.sendMessage({ type: 'design', info })
-  if (res.error && !res.theme) {
-    $('status').textContent = res.error
-  } else {
-    await chrome.tabs.sendMessage(tab.id, { type: 'apply', info: state.info, css: res.css, theme: res.theme })
-    $('status').textContent = res.source === 'model' ? 'Designed by Claude.' : `Offline motif${res.error ? ` (${res.error})` : ' (add an API key in Settings for designed themes)'}.`
-    show(res.theme)
-  }
-  $('design').disabled = false
+  const info = { ...state.info, idea: [state.info.idea, $('idea').value.trim()].filter(Boolean).join('\n\nThe look I want: ') }
+  const { text } = await chrome.runtime.sendMessage({ type: 'designPrompt', info })
+  const { ok } = await chrome.tabs.sendMessage(tab.id, { type: 'compose', text })
+  $('status').textContent = ok
+    ? 'Added to your chat. Press send; the theme switches when Claude replies.'
+    : 'Open a chat in this project first, then try again.'
 }
 
 $('off').onclick = async () => {

@@ -6,8 +6,11 @@
   body { font: 13px/1.4 system-ui, sans-serif; margin: 0; width: 320px; background: #1f1e1d; color: #f0eee6; }
   main { padding: 14px; display: grid; gap: 10px; }
   h1 { font-size: 14px; margin: 0; display: flex; gap: 8px; align-items: center; }
-  .logo { width: 28px; height: 28px; display: inline-grid; place-items: center; border-radius: 8px; background: #2a2927; }
-  .logo svg { width: 20px; height: 20px; }
+  .logo { width: 30px; height: 30px; display: inline-grid; place-items: center; }
+  .logo svg { width: 30px; height: 30px; }
+  .icons { display: flex; gap: 10px; }
+  .icons svg { width: 22px; height: 22px; }
+  .small { font-size: 12px; }
   .swatches { display: flex; gap: 4px; }
   .swatches span { width: 22px; height: 22px; border-radius: 5px; border: 1px solid #0004; }
   .strip { height: 14px; border-radius: 3px; background-repeat: repeat-x; background-size: auto 14px; }
@@ -25,13 +28,14 @@
   <div id="status" class="muted">Open a project on claude.ai.</div>
   <div class="swatches" id="swatches"></div>
   <div class="strip" id="strip"></div>
-  <div id="glyphs" style="font-size:20px"></div>
-  <textarea id="idea" placeholder="Describe the project's look, or leave empty to use its first prompt"></textarea>
+  <div id="icons" class="icons"></div>
+  <textarea id="idea" placeholder="Optional: describe the look you want. Empty uses the project's first prompt."></textarea>
   <div class="row">
-    <button id="design">/design</button>
+    <button id="design">Design with Claude</button>
     <button id="off" class="secondary">Turn off here</button>
   </div>
-  <a href="options.html" target="_blank" class="muted">Settings (API key, model)</a>
+  <div class="muted small">Adds a design request to your chat. Press send, and the theme switches when Claude replies. Uses your Claude plan, no API key.</div>
+  <a href="options.html" target="_blank" class="muted">Settings</a>
 </main>
 <script type="module" src="popup.js"></script>
 </body>

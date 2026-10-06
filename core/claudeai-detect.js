@@ -30,12 +30,16 @@ export async function detectClaudeAiProject(loc = location, fetchImpl = fetch) {
 
   let projectId = projectMatch && projectMatch[1]
   let firstPromptHere = ''
+  // A theme Claude designed in this chat: the last reply holding a ```skinshift block.
+  let design = null
   if (!projectId) {
     const chat = await getJson(`${base}/chat_conversations/${chatMatch[1]}?tree=False&rendering_mode=messages`)
     projectId = chat.project_uuid || (chat.project && chat.project.uuid) || null
-    const firstHuman = (chat.chat_messages || []).find(m => m.sender === 'human')
-    firstPromptHere = messageText(firstHuman)
-    if (!projectId) return { kind: 'chat', key: `chat:${chatMatch[1]}`, name: chat.name || '', idea: firstPromptHere }
+    const messages = chat.chat_messages || []
+    firstPromptHere = messageText(messages.find(m => m.sender === 'human'))
+    const reply = messages.filter(m => m.sender === 'assistant' && messageText(m).includes('```skinshift')).pop()
+    if (reply) design = { id: reply.uuid || String(reply.index), text: messageText(reply) }
+    if (!projectId) return { kind: 'chat', key: `chat:${chatMatch[1]}`, name: chat.name || '', idea: firstPromptHere, design }
   }
 
   const project = await getJson(`${base}/projects/${projectId}`)
@@ -57,6 +61,7 @@ export async function detectClaudeAiProject(loc = location, fetchImpl = fetch) {
     key: `project:${projectId}`,
     name: project.name || '',
     idea: idea || project.description || project.name || '',
+    design,
   }
 }
 

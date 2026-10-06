@@ -22,7 +22,8 @@
   .msg { max-width: 720px; }
   .human { background: hsl(var(--bg-300)); padding: 12px 16px; border-radius: 12px; align-self: flex-end; }
   .composer { margin-top: auto; background: hsl(var(--bg-000)); border: 1px solid hsl(var(--border-300) / .15); border-radius: 16px; padding: 14px 16px; display: flex; gap: 12px; align-items: center; }
-  .composer span { flex: 1; color: hsl(var(--text-300)); }
+  .composer .input { flex: 1; outline: none; white-space: pre-wrap; max-height: 120px; overflow: auto; }
+  .composer .input:empty::before { content: attr(data-placeholder); color: hsl(var(--text-300)); }
   .send { background: hsl(var(--accent-main-100)); color: white; border: 0; border-radius: 10px; padding: 8px 14px; }
   hr { border: 0; border-top: 1px solid hsl(var(--border-300) / .2); width: 100%; }
   code { background: hsl(var(--bg-300)); padding: 2px 6px; border-radius: 5px; color: hsl(var(--accent-brand)); }
@@ -37,6 +38,7 @@
   <h2>Recents</h2>
   <a href="/chat/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa">Timeline scrubbing</a>
   <a href="/chat/bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb">Order book feed</a>
+  <a href="/chat/dddddddd-dddd-4ddd-8ddd-dddddddddddd">Theme design</a>
   <a href="/chat/cccccccc-cccc-4ccc-8ccc-cccccccccccc">Random question</a>
 </nav>
 <main id="main"></main>
@@ -45,6 +47,7 @@
     'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa': ['Video editor app', 'How should the timeline handle scrubbing at 60fps?'],
     'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb': ['Day trading app', 'Stream the order book over a websocket.'],
     'cccccccc-cccc-4ccc-8ccc-cccccccccccc': [null, 'What is the capital of Peru?'],
+    'dddddddd-dddd-4ddd-8ddd-dddddddddddd': ['Video editor app', 'Design a Skinshift theme for this project'],
   }
   function render() {
     const p = location.pathname
@@ -55,7 +58,7 @@
       <div class="crumb">${project ? `Projects / ${project}` : 'Chats'}</div>
       <hr>
       ${chat ? `<div class="msg human">${chat[1]}</div><div class="msg">Here's an approach. Use <code>requestAnimationFrame</code> and keep the work off the main thread.</div><hr role="separator">` : `<div class="msg">${project || 'Start a chat'}</div>`}
-      <div class="composer"><span>Reply to Claude…</span><button class="send">Send</button></div>`
+      <div class="composer"><div class="input" contenteditable="true" data-placeholder="Reply to Claude…"></div><button class="send">Send</button></div>`
   }
   document.addEventListener('click', e => {
     const a = e.target.closest('a')

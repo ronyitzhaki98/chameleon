@@ -1,5 +1,5 @@
-const ids = ['apiKey', 'model', 'auto', 'themeChats']
-chrome.storage.local.get({ apiKey: '', model: 'claude-sonnet-5-5', auto: true, themeChats: false }).then(s => {
+const ids = ['auto', 'themeChats']
+chrome.storage.local.get({ auto: true, themeChats: false }).then(s => {
   for (const id of ids) {
     const el = document.getElementById(id)
     if (el.type === 'checkbox') el.checked = s[id]

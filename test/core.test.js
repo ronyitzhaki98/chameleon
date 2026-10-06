@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import {
-  contrast, extractJson, generateTheme, matchMotif, normalizeTheme, PATTERN_IDS, renderPattern,
-  sanitizeSvg, terminalLine, toClaudeAiCss, toClaudeCodeTheme,
+  chatDesignPrompt, contrast, extractDesignBlock, extractJson, generateTheme, iconSvg, logoSvg, matchMotif, normalizeTheme,
+  PATTERN_IDS, renderPattern, resolveIcon, searchIcons, terminalLine, toClaudeAiCss, toClaudeCodeTheme,
 } from '../core/index.js'
 
 test('keyword fallback maps the two examples from the brief', () => {
@@ -32,13 +32,30 @@ test('extractJson ignores braces inside strings', () => {
   assert.equal(extractJson('no json'), null)
 })
 
-test('logos are sanitized', () => {
-  assert.equal(sanitizeSvg('<svg><script>alert(1)</script></svg>'), null)
-  assert.equal(sanitizeSvg('<svg><foreignObject><div/></foreignObject></svg>'), null)
-  const clean = sanitizeSvg('<svg viewBox="0 0 32 32"><rect onload="x()" fill="url(https://evil)" width="3" href="javascript:1"/></svg>')
-  assert.equal(clean, '<svg viewBox="0 0 32 32"><rect width="3"/></svg>')
-  const theme = normalizeTheme({ logo: '<svg><image href="https://x"/></svg>', motif: 'film' })
-  assert.ok(!theme.logo.includes('image'), 'an unsafe logo falls back to the motif logo')
+test('icons resolve to real Tabler icons, by name or description', () => {
+  assert.equal(resolveIcon('movie'), 'movie')
+  assert.equal(resolveIcon('candlestick chart'), 'chart-candle')
+  assert.equal(resolveIcon('brand-youtube'), null)
+  assert.ok(searchIcons('rocket').includes('rocket'))
+  const theme = normalizeTheme({ motif: 'film', icons: ['film camera', 'not-a-real-icon-xyz', 'movie'] }, { resolveIcon })
+  assert.ok(theme.icons.includes('camera') && theme.icons.includes('movie'))
+  assert.ok(!theme.icons.includes('not-a-real-icon-xyz'))
+  assert.match(iconSvg('movie', { color: '#ff0000' }), /stroke="#ff0000"/)
+})
+
+test('the logo badge is a clean SVG in the theme colors', () => {
+  const theme = normalizeTheme({ motif: 'finance' }, { resolveIcon })
+  const svg = logoSvg(theme)
+  assert.match(svg, /^<svg[\s\S]*<\/svg>$/)
+  assert.ok(!/<script|on\w+=|href=/i.test(svg))
+  assert.match(svg, new RegExp(theme.palette.accent))
+})
+
+test('a design block in a chat reply is picked up', () => {
+  const reply = 'Golden-hour film set.\n```skinshift\n{"name":"Golden Hour","icons":["movie"]}\n```'
+  assert.deepEqual(extractDesignBlock(reply), { name: 'Golden Hour', icons: ['movie'] })
+  assert.equal(extractDesignBlock('```json\n{"a":1}\n```'), null)
+  assert.match(chatDesignPrompt({ idea: 'video editing', projectName: 'Video editor app' }), /```skinshift/)
 })
 
 test('every pattern renders an SVG', () => {

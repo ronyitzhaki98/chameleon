@@ -1,11 +1,16 @@
 // Content script: notices which project is open, asks the service worker for
 // its theme, and applies it. Navigation inside claude.ai is client-side, so the
 // URL is watched rather than page loads.
+//
+// "Design with Claude" (popup): puts a design request in the chat composer. The
+// person presses send; when Claude's reply with a ```skinshift block appears,
+// the detector sees it and the theme switches. No API key, no extra cost.
 (() => {
   const STYLE_ID = 'skinshift-style'
   let lastPath = null
   let current = null // { info, theme }
   let seq = 0
+  let watchUntil = 0
 
   function apply(css, theme) {
     let style = document.getElementById(STYLE_ID)
@@ -36,7 +41,8 @@
       console.debug('[skinshift] detect failed', e)
     }
     if (mine !== seq) return
-    if (info && current?.theme && current.info.key === info.key && !force) return
+    const sameDesign = (info?.design?.id || null) === (current?.info?.design?.id || null)
+    if (info && current?.theme && current.info.key === info.key && sameDesign && !force) return
     const res = await chrome.runtime.sendMessage({ type: 'resolve', info })
     if (mine !== seq) return
     current = res && res.css ? { info, theme: res.theme } : info ? { info, theme: null } : null
@@ -45,9 +51,28 @@
     if (res && res.pending) setTimeout(() => { lastPath = null }, 4000)
   }
 
+  function compose(text) {
+    const box = document.querySelector('div[contenteditable="true"], textarea')
+    if (!box) return false
+    box.focus()
+    if (box.tagName === 'TEXTAREA') {
+      box.value = text
+      box.dispatchEvent(new Event('input', { bubbles: true }))
+    } else {
+      document.execCommand('selectAll', false)
+      document.execCommand('insertText', false, text)
+    }
+    return true
+  }
+
   chrome.runtime.onMessage.addListener((msg, _sender, reply) => {
     if (msg.type === 'state') {
       reply(current)
+    } else if (msg.type === 'compose') {
+      const ok = compose(msg.text)
+      // Watch for Claude's reply for a few minutes after the request is sent.
+      if (ok) watchUntil = Date.now() + 5 * 60 * 1000
+      reply({ ok })
     } else if (msg.type === 'apply') {
       current = { info: msg.info, theme: msg.theme }
       apply(msg.css, msg.theme)
@@ -64,5 +89,6 @@
   }).observe(document.documentElement, { childList: true, subtree: false })
 
   setInterval(() => refresh(false), 400)
+  setInterval(() => { if (Date.now() < watchUntil && location.pathname.startsWith('/chat/')) refresh(true) }, 3000)
   refresh(false)
 })()

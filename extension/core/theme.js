@@ -5,8 +5,9 @@
 //   palette: { bg, surface, surfaceAlt, text, textMuted, accent, accent2,
 //              positive, negative, border },          // hex colors
 //   pattern: one of PATTERN_IDS,                       // the "line style"
-//   glyphs: [emoji, ...],                              // icon set
-//   logo: '<svg ...>',                                 // sanitized, 32x32 viewBox
+//   icons: [tabler icon name, ...],                    // icon set (real icons, core/iconset.js)
+//   logoIcon: tabler icon name,                        // drawn as an app-icon badge (core/art.js)
+//   glyphs: [emoji, ...],                              // icon set for terminals
 //   createdAt
 // }
 
@@ -16,48 +17,21 @@ import { PATTERN_IDS } from './patterns.js'
 
 export const PALETTE_KEYS = ['bg', 'surface', 'surfaceAlt', 'text', 'textMuted', 'accent', 'accent2', 'positive', 'negative', 'border']
 
-/**
- * Keeps only drawing elements and attributes in an SVG, so a model-made logo
- * can never carry script, event handlers, external references or foreignObject.
- */
-export function sanitizeSvg(input) {
-  if (typeof input !== 'string') return null
-  const text = input.trim()
-  if (!/^<svg[\s>]/i.test(text) || !/<\/svg>\s*$/i.test(text) || text.length > 8000) return null
-  const allowedTags = new Set(['svg', 'g', 'path', 'rect', 'circle', 'ellipse', 'line', 'polyline', 'polygon', 'text', 'tspan', 'defs', 'lineargradient', 'radialgradient', 'stop'])
-  const allowedAttrs = new Set(['xmlns', 'viewbox', 'width', 'height', 'd', 'x', 'y', 'x1', 'x2', 'y1', 'y2', 'cx', 'cy', 'r', 'rx', 'ry', 'points', 'fill', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'opacity', 'fill-opacity', 'stroke-opacity', 'transform', 'id', 'offset', 'stop-color', 'stop-opacity', 'font-size', 'font-family', 'font-weight', 'text-anchor', 'gradientunits'])
-  let ok = true
-  const out = text.replace(/<(\/?)([a-zA-Z][\w:-]*)([^>]*?)(\/?)>/g, (_, close, tag, attrs, self) => {
-    const name = tag.toLowerCase()
-    if (!allowedTags.has(name)) {
-      ok = false
-      return ''
-    }
-    if (close) return `</${tag}>`
-    const kept = []
-    for (const m of attrs.matchAll(/([a-zA-Z][\w:-]*)\s*=\s*("[^"]*"|'[^']*')/g)) {
-      const attr = m[1].toLowerCase()
-      const value = m[2].slice(1, -1)
-      if (!allowedAttrs.has(attr)) continue
-      if (/url\s*\(|javascript:|data:|&#|\\/i.test(value)) continue
-      kept.push(`${m[1]}="${value.replace(/"/g, '')}"`)
-    }
-    return `<${tag}${kept.length ? ' ' + kept.join(' ') : ''}${self}>`
-  })
-  if (!ok || /<!|<\?|&(?!amp;|lt;|gt;|quot;)/i.test(out.replace(/<[^>]*>/g, ''))) return null
-  return out
-}
-
 function slug(text) {
   return String(text || 'theme').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'theme'
 }
 
+// Without the icon pack (the Claude Code plugin does not ship it), icon names
+// are kept as given when they look like names; the web targets pass the real
+// resolver from core/iconset.js.
+const keepName = name => (typeof name === 'string' && /^[a-z0-9-]{1,60}$/.test(name) ? name : null)
+
 /**
- * Fills gaps from the base motif, repairs colors and contrast, sanitizes the
- * logo: whatever comes in (a model's JSON, a hand-edited file), what comes out
+ * Fills gaps from the base motif, repairs colors and contrast, resolves icon
+ * names: whatever comes in (a model's JSON, a hand-edited file), what comes out
  * is safe for every compiler.
  */
-export function normalizeTheme(raw, { idea = '', fallbackMotif = 'default' } = {}) {
+export function normalizeTheme(raw, { idea = '', fallbackMotif = 'default', resolveIcon = keepName } = {}) {
   const input = raw && typeof raw === 'object' ? raw : {}
   const motifId = MOTIFS[input.motif] ? input.motif : fallbackMotif
   const base = MOTIFS[motifId] || MOTIFS.default
@@ -88,7 +62,19 @@ export function normalizeTheme(raw, { idea = '', fallbackMotif = 'default' } = {
     palette,
     pattern: PATTERN_IDS.includes(input.pattern) ? input.pattern : base.pattern,
     glyphs: glyphs.length ? glyphs : base.glyphs,
-    logo: sanitizeSvg(input.logo) || base.logo,
+    icons: resolveIcons(input.icons, base.icons, resolveIcon),
+    logoIcon: resolveIcon(input.logoIcon) || resolveIcon(Array.isArray(input.icons) ? input.icons[0] : '') || base.logoIcon,
     createdAt: typeof input.createdAt === 'string' ? input.createdAt : new Date().toISOString(),
   }
+}
+
+/** Up to six real, distinct icons; the motif's own fill any gap. */
+function resolveIcons(wanted, fallback, resolveIcon) {
+  const out = []
+  for (const want of Array.isArray(wanted) ? wanted.slice(0, 10) : []) {
+    const name = resolveIcon(want)
+    if (name && !out.includes(name)) out.push(name)
+  }
+  for (const name of fallback) if (out.length < 4 && !out.includes(name)) out.push(name)
+  return out.slice(0, 6)
 }

@@ -2,13 +2,12 @@
   "manifest_version": 3,
   "name": "Skinshift",
   "version": "0.1.0",
-  "description": "Gives every Claude project its own generated theme: colors, line styles, icons and logo, switching as you move between projects.",
+  "description": "Gives every Claude project its own theme: colors, line styles, icons and a logo, switching as you move between projects. Free, no API keys.",
   "permissions": [
     "storage"
   ],
   "host_permissions": [
-    "https://claude.ai/*",
-    "https://api.anthropic.com/*"
+    "https://claude.ai/*"
   ],
   "background": {
     "service_worker": "background.js",

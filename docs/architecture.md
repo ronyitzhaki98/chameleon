@@ -8,7 +8,13 @@
                   keyword fallback                     └─► terminalLine()       ──► Claude Code band above the prompt
 ```
 
-One **theme document** per project (`core/theme.js`): a name, a mode, ten palette colors, a line style (`pattern`), five icons (`glyphs`), a sanitized SVG logo. Every target compiles from it, so a project looks related everywhere it shows up.
+One **theme document** per project (`core/theme.js`): a name, a mode, ten palette colors, a line style (`pattern`), six real icons (`icons`, Tabler names), a logo icon (`logoIcon`, drawn as an app-icon badge by `core/art.js`), and emoji (`glyphs`) for terminals. Every target compiles from it, so a project looks related everywhere it shows up.
+
+## Free by design
+
+- **Icons:** the Tabler set (MIT) is bundled in `core/icons/tabler.js`, so there is no icon service, key or network call. The model names icons or describes them; `resolveIcon()` maps that to a real icon.
+- **The design itself:** always Claude on the person's existing plan. Claude Code uses the session's own model; the extension asks in the person's own chat (they press send); the CLI runs `claude -p`. No API key anywhere.
+- **Without any design:** every project gets a starter theme from the motif library, matched to its first prompt.
 
 ## What can be themed where
 
@@ -17,7 +23,7 @@ Findings from researching each surface (October 2026).
 ### claude.ai (web): fully possible, supported route
 
 - claude.ai colors itself from Tailwind tokens held as HSL triplets on `:root` (`--bg-000`…`--bg-500`, `--text-000`…`--text-500`, `--accent-main-*`, `--accent-brand`, `--border-*`, `--danger-*`). Overriding them recolors the whole app.
-- Decorations ride on pseudo-elements of `<html>` and `<body>` (top band, logo badge, faint icon wallpaper) and on `hr` / `[role=separator]` (line styles), so they don't depend on the app's markup.
+- Decorations ride on pseudo-elements of `<html>` and `<body>` (top band, logo badge) and on `hr` / `[role=separator]` (line styles), so they don't depend on the app's markup.
 - A browser extension is the normal, supported way to restyle a website for yourself. Everything is scoped to `html[data-skinshift]`, so removing the attribute restores the stock look.
 - Token names are claude.ai internals and can change. They are all in `toClaudeAiCss()` in `core/compile.js`, so a change is a one-place fix.
 
@@ -55,17 +61,16 @@ These endpoints are undocumented. If they change, detection returns nothing and 
 
 ### "/design"
 
-The brief asks for themes "generated via /design". There is no public API for Claude's design tools that another app can call, so Skinshift's `/design` is its own command (Claude Code) and button (extension popup) that asks Claude, through the Messages API or the Claude Code session, to act as the designer: the system prompt in `core/generate.js` returns a structured theme (palette, motif, line style, icons, SVG logo). The logo SVG is sanitized (`sanitizeSvg`) before it is ever rendered.
+The brief asks for themes "generated via /design". There is no public API for Claude's design tools that another app can call, so Skinshift's `/design` is its own command (Claude Code) and "Design with Claude" button (extension popup) that asks Claude to act as the designer and return a structured theme (palette, motif, line style, icon names, logo icon). The model never draws the artwork itself: logos, icons and line styles are composed from the bundled icon set and hand-drawn patterns, which is what keeps them looking consistent.
 
 ## Data and privacy
 
-- Extension: themes live in `chrome.storage.local`. The API key, if you add one, stays in that storage and is only sent to `api.anthropic.com`. The project's first prompt is sent to the model to design the theme.
+- Extension: themes live in `chrome.storage.local`. It talks to nothing but claude.ai, as you; the design request is a normal message in your own chat.
 - Claude Code: themes live in the plugin's store and `~/.claude/themes/`.
 - Desktop: `~/.skinshift/config.json` (key, model) and `~/.skinshift/themes/`.
 
 ## Ideas for later
 
 - Theme previews before applying, and a "shuffle" for alternatives.
-- Generated raster art (e.g. an image model for the wallpaper) behind an option.
 - Sync themes between the extension and Claude Code by project name.
 - Per-chat accents inside a project.

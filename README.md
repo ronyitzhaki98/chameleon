@@ -1,12 +1,16 @@
 # Skinshift
 
-Every Claude project gets its own look. Skinshift reads a project's first prompt, designs a theme for it (colors, a logo, an icon set, and a "line style" that replaces plain divider lines) and switches to it whenever you open a chat in that project.
+Every Claude project gets its own look. Skinshift reads a project's first prompt, designs a theme for it (colors, a logo badge, a set of real icons, and a "line style" that replaces plain divider lines) and switches to it whenever you open a chat in that project.
+
+**Free, no API keys.** Icons come from the bundled [Tabler](https://tabler.io/icons) set (MIT, about 4,800 icons, works offline). Custom designs come from Claude on the plan you already have.
 
 Open a chat in **Video editor app** ("I want to build a software for video editing") and the app turns into a cutting room: film-strip dividers, a clapperboard badge, camera and lighting icons, a dark set with tungsten yellow. Switch to a chat in **Day trading app** and it becomes a trading floor: candlestick dividers, red and green, bulls, bears and dollar signs.
 
-| Video editor app | Day trading app |
-| --- | --- |
-| ![Video editor theme](docs/screenshots/video-editor.png) | ![Day trading theme](docs/screenshots/day-trading.png) |
+| Video editor app (starter theme) | Day trading app (starter theme) | Video editor app, designed by Claude |
+| --- | --- | --- |
+| ![Video editor theme](docs/screenshots/video-editor.png) | ![Day trading theme](docs/screenshots/day-trading.png) | ![Designed theme](docs/screenshots/designed-by-claude.png) |
+
+All the starter themes: ![Motifs](docs/screenshots/motifs.png)
 
 *Screenshots are from the end-to-end test, which loads the real extension against a stand-in for claude.ai (`test/e2e/fake-claude.html`).*
 
@@ -20,7 +24,7 @@ Open a chat in **Video editor app** ("I want to build a software for video editi
 | [`claude-code-plugin/`](claude-code-plugin) | Claude Code (terminal, and the desktop app's Code tab) | A Claude Code plugin: custom theme files, a themed band above the prompt, `/design` | Working, plugin-tested |
 | [`desktop/`](desktop) | The Claude Desktop app's chat window | Patches the installed app to inject the same stylesheet | **Experimental, unofficial, Linux only.** Read [docs/desktop.md](docs/desktop.md) first |
 | [`core/`](core) | | The shared theme engine: schema, generator, compilers | Unit-tested |
-| [`cli/`](cli) | | `skinshift design "<idea>"` and `skinshift preview` | |
+| [`cli/`](cli) | | `skinshift design "<idea>"` (via `claude -p`), `skinshift prompt`, `skinshift preview` | |
 
 How the pieces fit, and what each one can and can't change, is in [docs/architecture.md](docs/architecture.md).
 
@@ -47,9 +51,7 @@ Themes are designed with the session's own model access (no extra API key). The 
 
 1. Clone the repo, run `npm run build` (only needed after editing `core/`; the built files are committed).
 2. Open `chrome://extensions`, turn on Developer mode, **Load unpacked**, pick the `extension/` folder.
-3. Optional: in the extension's Settings, paste an Anthropic API key so Claude designs each theme. Without one, themes come from the built-in motif library (see `docs/preview.html`), matched to the project's idea by keywords.
-
-The popup shows the current project's theme, lets you redesign it from a description (`/design`) or turn it off for that project.
+Every project gets a starter theme right away, picked from its first prompt (see `docs/preview.html`). For a custom one, open the popup and press **Design with Claude**: it puts a design request in your chat (optionally with your own notes on the look), you press send, and when Claude replies with its ```` ```skinshift ```` block the project switches to that design. The popup can also turn the theme off for a project.
 
 ### Claude Desktop
 
@@ -70,7 +72,8 @@ npm run preview     # docs/preview.html: every built-in motif
 ### Adding a motif or line style
 
 - A line style is one function in `core/patterns.js` that returns a tileable SVG strip, plus its terminal characters in `TERMINAL_LINES`.
-- A motif is one entry in `core/motifs.js`: keywords, palette, line style, icons, logo.
+- A motif is one entry in `core/motifs.js`: keywords, palette, line style, Tabler icon names, logo icon.
+- `npm run build:icons` refreshes the bundled icon pack from `@tabler/icons`.
 
 The model is told the list of both, so a new one is available to designed themes immediately.
 

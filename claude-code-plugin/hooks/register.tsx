@@ -2,13 +2,14 @@ import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
 import type { ActiveTheme } from '../types'
-import { generateTheme, terminalLine, toClaudeCodeTheme } from './core/index.js'
+import { terminalLine, toClaudeCodeTheme } from './core/compile.js'
+import { generateTheme } from './core/generate.js'
 
 const active = atom({ plugin: 'skinshift', key: 'active' } as const, null)
 const designing = atom({ plugin: 'skinshift', key: 'designing' } as const, false)
 const bandHidden = atom({ plugin: 'skinshift', key: 'bandHidden' } as const, false)
 
-type Theme = ActiveTheme & { idea: string; logo: string; motif: string }
+type Theme = ActiveTheme & { idea: string; motif: string; icons: string[]; logoIcon: string }
 type Options = { model?: string; auto?: boolean }
 
 const projectKey = (root: string) => `project:${root}`

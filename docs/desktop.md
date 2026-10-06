@@ -15,8 +15,8 @@ The injector watches each window that shows claude.ai, detects the open project 
 ## Use (Linux)
 
 ```bash
-# optional: a key so Claude designs the themes
-mkdir -p ~/.skinshift && echo '{ "apiKey": "sk-ant-...", "model": "claude-sonnet-5-5" }' > ~/.skinshift/config.json
+# optional settings: { "auto": true, "themeChats": false }
+mkdir -p ~/.skinshift && echo '{ "auto": true }' > ~/.skinshift/config.json
 
 node desktop/patch.mjs status              # finds app.asar, or pass --app <path>
 sudo node desktop/patch.mjs install        # backs up, patches; restart Claude Desktop

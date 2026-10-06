@@ -17,8 +17,10 @@ for (const target of ['extension/core', 'claude-code-plugin/hooks/core']) {
   cpSync(core, dest, { recursive: true })
   writeFileSync(join(dest, 'GENERATED.md'), 'Copied from /core by scripts/build.mjs. Do not edit here.\n')
 }
-// The plugin needs no network transport or page detector.
-rmSync(join(root, 'claude-code-plugin/hooks/core/claudeai-detect.js'))
+// The plugin draws in a terminal: it needs no page detector, icon pack or web stylesheet.
+for (const f of ['claudeai-detect.js', 'icons', 'iconset.js', 'art.js', 'compile-web.js', 'index.js']) {
+  rmSync(join(root, 'claude-code-plugin/hooks/core', f), { recursive: true })
+}
 
 const detect = readFileSync(join(core, 'claudeai-detect.js'), 'utf8')
   .replace(/^export async function detectClaudeAiProject/m, 'async function detectClaudeAiProject')

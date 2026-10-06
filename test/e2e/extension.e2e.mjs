@@ -12,6 +12,12 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '../..')
 const shots = join(root, 'docs/screenshots')
 mkdirSync(shots, { recursive: true })
 const page404 = { status: 404, body: '{}' }
+const DESIGN_REPLY = 'A warm, golden-hour film set: tungsten amber on deep charcoal, film-strip dividers.\n\n```skinshift\n' + JSON.stringify({
+  name: 'Golden Hour', motif: 'film', mode: 'dark',
+  palette: { bg: '#15120e', surface: '#1d1914', surfaceAlt: '#27211a', text: '#f4ead8', textMuted: '#a8997f', accent: '#f2a541', accent2: '#e05d44', positive: '#7cb36b', negative: '#e05d44', border: '#3a3126' },
+  pattern: 'filmstrip', icons: ['movie', 'camera', 'bulb', 'microphone-2', 'video', 'aperture'], logoIcon: 'movie', glyphs: ['🎬', '🎥', '💡', '🎙️', '🎞️'],
+}) + '\n```'
+let replyArrived = false
 const ORG = '99999999-9999-4999-8999-999999999999'
 const projects = {
   '11111111-1111-4111-8111-111111111111': { name: 'Video editor app', first: 'I want to build a software for video editing' },
@@ -21,6 +27,8 @@ const chats = {
   'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa': { project: '11111111-1111-4111-8111-111111111111', text: 'How should the timeline handle scrubbing at 60fps?' },
   'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb': { project: '22222222-2222-4222-8222-222222222222', text: 'Stream the order book over a websocket.' },
   'cccccccc-cccc-4ccc-8ccc-cccccccccccc': { project: null, text: 'What is the capital of Peru?' },
+  // a chat where Claude answered "Design with Claude" (its reply arrives after the request is sent)
+  'dddddddd-dddd-4ddd-8ddd-dddddddddddd': { project: '11111111-1111-4111-8111-111111111111', text: 'Design a Skinshift theme for this project', reply: DESIGN_REPLY },
   // each project's oldest chat holds its first prompt
   'f1111111-1111-4111-8111-111111111111': { project: '11111111-1111-4111-8111-111111111111', text: projects['11111111-1111-4111-8111-111111111111'].first },
   'f2222222-2222-4222-8222-222222222222': { project: '22222222-2222-4222-8222-222222222222', text: projects['22222222-2222-4222-8222-222222222222'].first },
@@ -31,7 +39,9 @@ function api(path) {
   if (path === '/api/organizations') return [{ uuid: ORG }]
   if ((m = path.match(/chat_conversations\/([0-9a-f-]{36})/))) {
     const c = chats[m[1]]
-    return c && { uuid: m[1], name: '', project_uuid: c.project, chat_messages: [{ sender: 'human', text: c.text }] }
+    const messages = [{ uuid: `${m[1]}-1`, sender: 'human', text: c.text }]
+    if (c.reply && replyArrived) messages.push({ uuid: `${m[1]}-2`, sender: 'assistant', text: c.reply })
+    return c && { uuid: m[1], name: '', project_uuid: c.project, chat_messages: messages }
   }
   if ((m = path.match(/projects\/([0-9a-f-]{36})\/conversations$/))) {
     return Object.entries(chats).filter(([, c]) => c.project === m[1]).map(([uuid]) => ({ uuid, created_at: uuid.startsWith('f') ? '2026-01-01' : '2026-05-01' }))
@@ -95,12 +105,31 @@ const hrBg = await page.evaluate(() => getComputedStyle(document.querySelector('
 check(hrBg.includes('svg'), 'divider lines became candlestick strips')
 await page.screenshot({ path: join(shots, 'day-trading.png') })
 
+// Design with Claude: the popup asks the page to put the request in the composer...
+await page.click('text=Theme design')
+await waitTheme('video-editor-app')
+const [worker] = context.serviceWorkers()
+const composed = await worker.evaluate(async () => {
+  const [tab] = await chrome.tabs.query({ url: 'https://claude.ai/*' })
+  return chrome.tabs.sendMessage(tab.id, { type: 'compose', text: 'Design a Skinshift theme for this project' })
+}).catch(e => ({ error: String(e) }))
+check(composed?.ok === true, 'the design request is placed in the chat composer')
+check((await page.textContent('.composer .input')).includes('Design a Skinshift theme'), 'the composer holds the request, ready to send')
+// ...and when Claude's reply with a ```skinshift block lands, the project switches to it.
+replyArrived = true
+const designed = await (async () => { for (let i = 0; i < 80; i++) { if ((await themeId()) === 'golden-hour') return 'golden-hour'; await page.waitForTimeout(100) } return themeId() })()
+check(designed === 'golden-hour', `Claude's design replaces the starter theme (${designed})`)
+await page.screenshot({ path: join(shots, 'designed-by-claude.png') })
+await page.click('text=Timeline scrubbing')
+await page.waitForTimeout(800)
+check((await themeId()) === 'golden-hour', 'other chats in the project use the designed theme')
+
 await page.click('text=Random question')
 check((await waitTheme(null)) === null, 'a chat outside any project goes back to stock')
 check((await bg()) === stockBg, 'stock background restored')
 
 await page.click('text=Video editor app')
-check((await waitTheme('video-editor-app')) === 'video-editor-app', 'the project page reuses its saved theme')
+check((await waitTheme('golden-hour')) === 'golden-hour', 'the project page reuses its saved theme')
 
 await context.close()
 if (failures.length) {
