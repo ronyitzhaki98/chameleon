@@ -18,7 +18,7 @@ for (const target of ['extension/core', 'claude-code-plugin/hooks/core']) {
   writeFileSync(join(dest, 'GENERATED.md'), 'Copied from /core by scripts/build.mjs. Do not edit here.\n')
 }
 // The plugin draws in a terminal: it needs no page detector, icon pack or web stylesheet.
-for (const f of ['claudeai-detect.js', 'icons', 'iconset.js', 'art.js', 'compile-web.js', 'index.js']) {
+for (const f of ['claudeai-detect.js', 'icons', 'iconset.js', 'art.js', 'compile-web.js', 'retint.js', 'index.js']) {
   rmSync(join(root, 'claude-code-plugin/hooks/core', f), { recursive: true })
 }
 

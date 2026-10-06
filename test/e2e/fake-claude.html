@@ -1,35 +1,46 @@
 <!doctype html>
-<html class="dark">
+<html class="cds-root" data-mode="dark" data-theme="claude">
 <head>
 <meta charset="utf-8">
 <title>Claude (test double)</title>
-<!-- A stand-in for claude.ai used by the end-to-end test: same token names
-     (HSL triplets on :root), same URL shapes, client-side navigation. -->
+<!-- A stand-in for claude.ai used by the end-to-end test. It mirrors the live
+     site's structure as of Oct 2026: two token systems at once (hex --cds-*
+     declared on html.cds-root[data-mode], legacy "H S% L%" triplets consumed
+     as hsl(var(--x))), frame tokens declared on .dframe-root itself, the same
+     URL shapes, and client-side navigation. -->
 <style>
-  :root {
+  html.cds-root[data-mode="dark"] {
+    --cds-surface-0: #1f1e1d; --cds-surface-1: #262624; --cds-surface-2: #30302e; --cds-surface-3: #3a3937;
+    --cds-text-primary: #faf9f5; --cds-text-secondary: #c2c0b6; --cds-text-muted: #9c9a92;
+    --cds-border-subtle: #3e3e38; --cds-fill-accent: #d97757; --cds-text-accent: #e08a6d; --cds-bg-user-message: #141413;
+    --cds-text-danger: #e5786c;
+    --cds-gray-50: #f5f4ef; --cds-gray-500: #87867f; --cds-gray-900: #1a1918;
     --bg-000: 60 2.1% 18.4%; --bg-100: 60 2.7% 14.5%; --bg-200: 30 3.3% 11.8%; --bg-300: 60 2.6% 7.6%;
     --text-000: 48 33.3% 97.1%; --text-100: 48 33.3% 97.1%; --text-200: 50 9% 73.7%; --text-300: 48 4.8% 59.2%;
-    --border-300: 60 9.1% 82.2%; --accent-main-100: 15.1 63.1% 59.6%; --accent-brand: 15 63.1% 59.6%;
+    --border-300: 60 9.1% 82.2%; --accent-brand: 15 63.1% 59.6%; --danger-000: 5 69.4% 72.9%; --oncolor-100: 0 0% 100%;
   }
+  .dframe-root { --df-sidebar-bg: #1a1918; --df-bg-page-hsl: 30 3.3% 11.8%; }
   * { box-sizing: border-box; }
-  body { margin: 0; font: 15px/1.5 system-ui, sans-serif; background: hsl(var(--bg-100)); color: hsl(var(--text-100)); display: grid; grid-template-columns: 240px 1fr; height: 100vh; }
-  nav { background: hsl(var(--bg-200)); padding: 18px 12px; border-right: 1px solid hsl(var(--border-300) / .15); }
-  nav h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: hsl(var(--text-300)); margin: 18px 8px 6px; }
-  nav a { display: block; padding: 7px 10px; border-radius: 8px; color: hsl(var(--text-200)); text-decoration: none; }
-  nav a:hover, nav a.on { background: hsl(var(--bg-000)); color: hsl(var(--text-000)); }
+  body { margin: 0; font: 15px/1.5 system-ui, sans-serif; color: var(--cds-text-primary); }
+  .dframe-root { background: hsl(var(--df-bg-page-hsl)); display: grid; grid-template-columns: 240px 1fr; height: 100vh; }
+  nav { background: var(--df-sidebar-bg); padding: 18px 12px; border-right: 1px solid var(--cds-border-subtle); }
+  nav h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--cds-text-muted); margin: 18px 8px 6px; }
+  nav a { display: block; padding: 7px 10px; border-radius: 8px; color: var(--cds-text-secondary); text-decoration: none; }
+  nav a:hover, nav a.on { background: var(--cds-surface-2); color: var(--cds-text-primary); }
   main { display: flex; flex-direction: column; padding: 28px 48px; gap: 16px; overflow: auto; }
-  .crumb { color: hsl(var(--text-300)); font-size: 13px; }
+  header a { color: var(--cds-text-muted); font-size: 13px; text-decoration: none; }
   .msg { max-width: 720px; }
-  .human { background: hsl(var(--bg-300)); padding: 12px 16px; border-radius: 12px; align-self: flex-end; }
-  .composer { margin-top: auto; background: hsl(var(--bg-000)); border: 1px solid hsl(var(--border-300) / .15); border-radius: 16px; padding: 14px 16px; display: flex; gap: 12px; align-items: center; }
+  .human { background: var(--cds-bg-user-message); padding: 12px 16px; border-radius: 12px; align-self: flex-end; }
+  .composer { margin-top: auto; background: var(--cds-surface-2); border: 1px solid var(--cds-border-subtle); border-radius: 16px; padding: 14px 16px; display: flex; gap: 12px; align-items: center; }
   .composer .input { flex: 1; outline: none; white-space: pre-wrap; max-height: 120px; overflow: auto; }
-  .composer .input:empty::before { content: attr(data-placeholder); color: hsl(var(--text-300)); }
-  .send { background: hsl(var(--accent-main-100)); color: white; border: 0; border-radius: 10px; padding: 8px 14px; }
-  hr { border: 0; border-top: 1px solid hsl(var(--border-300) / .2); width: 100%; }
-  code { background: hsl(var(--bg-300)); padding: 2px 6px; border-radius: 5px; color: hsl(var(--accent-brand)); }
+  .composer .input:empty::before { content: attr(data-placeholder); color: var(--cds-text-muted); }
+  .send { background: var(--cds-fill-accent); color: hsl(var(--oncolor-100)); border: 0; border-radius: 10px; padding: 8px 14px; }
+  hr { border: 0; border-top: 1px solid var(--cds-border-subtle); width: 100%; }
+  code { background: hsl(var(--bg-300)); padding: 2px 6px; border-radius: 5px; color: hsl(var(--danger-000)); }
 </style>
 </head>
 <body>
+<div class="dframe-root">
 <nav>
   <a href="/new">+ New chat</a>
   <h2>Projects</h2>
@@ -42,6 +53,7 @@
   <a href="/chat/cccccccc-cccc-4ccc-8ccc-cccccccccccc">Random question</a>
 </nav>
 <main id="main"></main>
+</div>
 <script>
   const chats = {
     'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa': ['Video editor app', 'How should the timeline handle scrubbing at 60fps?'],
@@ -55,7 +67,7 @@
     const project = p.startsWith('/project/') ? (p.includes('1111') ? 'Video editor app' : 'Day trading app') : chat && chat[0]
     document.querySelectorAll('nav a').forEach(a => a.classList.toggle('on', a.getAttribute('href') === p))
     document.getElementById('main').innerHTML = `
-      <div class="crumb">${project ? `Projects / ${project}` : 'Chats'}</div>
+      <header>${project ? `<a href="/project/${project.startsWith('Video') ? '11111111-1111-4111-8111-111111111111' : '22222222-2222-4222-8222-222222222222'}">${project}</a>` : 'Chats'}</header>
       <hr>
       ${chat ? `<div class="msg human">${chat[1]}</div><div class="msg">Here's an approach. Use <code>requestAnimationFrame</code> and keep the work off the main thread.</div><hr role="separator">` : `<div class="msg">${project || 'Start a chat'}</div>`}
       <div class="composer"><div class="input" contenteditable="true" data-placeholder="Reply to Claude…"></div><button class="send">Send</button></div>`

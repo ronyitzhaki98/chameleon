@@ -10,7 +10,48 @@
   let lastPath = null
   let current = null // { info, theme }
   let seq = 0
+  let shape = ''
   let watchUntil = 0
+  let lastError = null
+  let lastResolve = null
+
+  // Elements claude.ai declares its own color tokens on (besides <html>).
+  const SCOPES = ['.dframe-root', '.dframe-sidebar', '.dframe-card', '.dframe-sidebar-body']
+
+  function readTokens(el) {
+    const cs = getComputedStyle(el)
+    const out = {}
+    for (let i = 0; i < cs.length; i++) {
+      const name = cs[i]
+      if (!name.startsWith('--')) continue
+      const value = cs.getPropertyValue(name).trim()
+      if (value && value.length < 80) out[name] = value
+    }
+    return out
+  }
+
+  /** The page's own tokens, read with our sheet switched off for a moment. */
+  function readPage() {
+    const style = document.getElementById(STYLE_ID)
+    if (style) style.disabled = true
+    try {
+      const root = readTokens(document.documentElement)
+      const scopes = {}
+      for (const sel of SCOPES) {
+        const el = document.querySelector(sel)
+        if (!el) continue
+        const own = {}
+        for (const [k, v] of Object.entries(readTokens(el))) if (root[k] !== v) own[k] = v
+        if (Object.keys(own).length) scopes[sel] = own
+      }
+      return { root, scopes }
+    } finally {
+      if (style) style.disabled = false
+    }
+  }
+
+  const pageShape = () => SCOPES.filter(sel => document.querySelector(sel)).join(',') + '|' +
+    (document.documentElement.getAttribute('data-mode') || '') + '|' + document.documentElement.className
 
   function apply(css, theme) {
     let style = document.getElementById(STYLE_ID)
@@ -37,18 +78,59 @@
     let info = null
     try {
       info = await globalThis.ChameleonDetect(location, fetch.bind(globalThis))
+      lastError = null
     } catch (e) {
-      console.debug('[chameleon] detect failed', e)
+      lastError = String(e?.message || e)
+      console.warn('[chameleon] project lookup failed, reading the page instead:', lastError)
+      info = detectFromPage()
     }
     if (mine !== seq) return
     const sameDesign = (info?.design?.id || null) === (current?.info?.design?.id || null)
     if (info && current?.theme && current.info.key === info.key && sameDesign && !force) return
-    const res = await chrome.runtime.sendMessage({ type: 'resolve', info })
+    const page = readPage()
+    shape = pageShape()
+    const res = await chrome.runtime.sendMessage({ type: 'resolve', info, page })
+    lastResolve = res ? { hasCss: Boolean(res.css), pending: Boolean(res.pending), error: res.error || null, retinted: res.retinted ?? null } : null
     if (mine !== seq) return
     current = res && res.css ? { info, theme: res.theme } : info ? { info, theme: null } : null
     apply(res && res.css, res && res.theme)
     // A brand-new project has no first prompt yet: look again shortly.
     if (res && res.pending) setTimeout(() => { lastPath = null }, 4000)
+  }
+
+  // Fallback when claude.ai's own data endpoints fail: the project link the
+  // page shows above a chat (or the project page itself).
+  function detectFromPage() {
+    const onProject = location.pathname.match(/^\/project\/([0-9a-f-]{36})/)
+    const link = document.querySelector('header a[href^="/project/"], main a[href^="/project/"], [data-testid*="breadcrumb"] a[href^="/project/"]')
+    const id = onProject ? onProject[1] : link?.getAttribute('href').match(/^\/project\/([0-9a-f-]{36})/)?.[1]
+    if (!id) return null
+    const name = (onProject ? document.querySelector('main h1, h1')?.textContent : link.textContent)?.trim() || ''
+    return { kind: 'project', key: `project:${id}`, name, idea: name, design: null, viaPage: true }
+  }
+
+  function diagnose() {
+    const html = document.documentElement
+    const page = readPage()
+    const colorish = Object.entries(page.root).filter(([, v]) => /^#|^\d+(\.\d+)?(deg)?\s+[\d.]+%|^(rgb|hsl|oklch)/i.test(v))
+    return {
+      extension: chrome.runtime.getManifest().version,
+      path: location.pathname.replace(/[0-9a-f-]{36}/g, '<id>'),
+      html: { class: html.className, mode: html.getAttribute('data-mode'), theme: html.getAttribute('data-theme'), applied: html.getAttribute('data-chameleon') },
+      styleTag: Boolean(document.getElementById(STYLE_ID)),
+      detect: current?.info
+        ? { kind: current.info.kind, via: current.info.viaPage ? 'page' : 'api', nameChars: (current.info.name || '').length, ideaChars: (current.info.idea || '').length, hasDesign: Boolean(current.info.design) }
+        : null,
+      lookupError: lastError,
+      resolve: lastResolve,
+      tokens: {
+        root: Object.keys(page.root).length,
+        colors: colorish.length,
+        sample: colorish.filter(([k]) => /surface|bg-|text-|accent|brand|gray-5/.test(k)).slice(0, 24),
+        scopes: Object.fromEntries(Object.entries(page.scopes).map(([k, v]) => [k, Object.keys(v).length])),
+      },
+      composer: Boolean(document.querySelector('div[contenteditable="true"], textarea')),
+    }
   }
 
   function compose(text) {
@@ -68,6 +150,8 @@
   chrome.runtime.onMessage.addListener((msg, _sender, reply) => {
     if (msg.type === 'state') {
       reply(current)
+    } else if (msg.type === 'diagnose') {
+      reply(diagnose())
     } else if (msg.type === 'compose') {
       const ok = compose(msg.text)
       // Watch for Claude's reply for a few minutes after the request is sent.
@@ -88,7 +172,13 @@
     if (current?.theme && !document.getElementById(STYLE_ID)) refresh(true)
   }).observe(document.documentElement, { childList: true, subtree: false })
 
-  setInterval(() => refresh(false), 400)
+  // Re-read the page when it changes shape: its sheets finish loading, the
+  // frame elements appear, or light/dark mode flips.
+  setInterval(() => {
+    if (current?.theme && pageShape() !== shape) refresh(true)
+    else refresh(false)
+  }, 400)
+  window.addEventListener('load', () => current?.theme && refresh(true))
   setInterval(() => { if (Date.now() < watchUntil && location.pathname.startsWith('/chat/')) refresh(true) }, 3000)
   refresh(false)
 })()

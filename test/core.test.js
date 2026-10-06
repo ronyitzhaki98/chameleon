@@ -82,3 +82,26 @@ test('terminal line fills the width', () => {
   const runs = terminalLine(normalizeTheme({ motif: 'finance' }), 40)
   assert.equal(runs.map(r => r.text).join('').length, 40)
 })
+
+test('live tokens are retinted in the format the page wrote them', async () => {
+  const { parseColor, formatColor, retintTokens } = await import('../core/retint.js')
+  for (const v of ['#1f1e1d', '30 3.3% 11.8%', 'rgb(31 30 29)']) {
+    const c = parseColor(v)
+    assert.ok(c, v)
+    assert.equal(parseColor(formatColor(c.rgb, c)).format, c.format)
+  }
+  assert.equal(parseColor('12px'), null)
+  const theme = normalizeTheme({ motif: 'finance', mode: 'dark' }, { resolveIcon })
+  const page = {
+    '--cds-surface-0': '#262624', '--cds-text-primary': '#faf9f5', '--cds-fill-accent': '#d97757',
+    '--bg-100': '60 2.1% 18.4%', '--text-100': '48 33.3% 97.1%', '--accent-brand': '15 63.1% 59.6%',
+    '--danger-100': '0 67% 59.6%', '--chart-purple': '#8b5cf6', '--radius': '8px',
+  }
+  const out = retintTokens(page, theme)
+  assert.match(out['--cds-surface-0'], /^#[0-9a-f]{6}$/)
+  assert.match(out['--bg-100'], /^\d+(\.\d+)? \d+(\.\d+)?% \d+(\.\d+)?%$/)
+  assert.ok(out['--cds-fill-accent'] && out['--accent-brand'], 'accent follows the theme')
+  assert.ok(!('--chart-purple' in out) && !('--radius' in out), 'unrelated tokens are left alone')
+  const css = toClaudeAiCss(theme, { root: page, scopes: { '.dframe-root': { '--df-sidebar-bg': '#1f1e1d' } } })
+  assert.match(css, /html\[data-chameleon\] \.dframe-root \{[^}]*--df-sidebar-bg/)
+})

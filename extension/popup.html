@@ -35,7 +35,11 @@
     <button id="off" class="secondary">Turn off here</button>
   </div>
   <div class="muted small">Adds a design request to your chat. Press send, and the theme switches when Claude replies. Uses your Claude plan, no API key.</div>
-  <a href="options.html" target="_blank" class="muted">Settings</a>
+  <div class="row">
+    <button id="diag" class="secondary">Copy diagnostics</button>
+    <a href="options.html" target="_blank" class="muted" style="align-self:center">Settings</a>
+  </div>
+  <textarea id="diagOut" readonly hidden></textarea>
 </main>
 <script type="module" src="popup.js"></script>
 </body>

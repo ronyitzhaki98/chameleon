@@ -4,6 +4,7 @@ import { logoSvg } from './art.js'
 import { hslTriplet, mix } from './color.js'
 import { iconSvg } from './iconset.js'
 import { renderPattern, svgDataUri } from './patterns.js'
+import { retintTokens } from './retint.js'
 
 /**
  * claude.ai (and Claude Desktop, which loads it) colors itself from Tailwind
@@ -15,7 +16,14 @@ import { renderPattern, svgDataUri } from './patterns.js'
  * These token names are claude.ai internals, not a public API: they live in
  * this one function so a change on claude.ai is a one-place fix.
  */
-export function toClaudeAiCss(theme) {
+/**
+ * @param theme a normalized theme
+ * @param page what the content script read from the live page:
+ *   { root: { '--token': value }, scopes: { '.selector': { '--token': value } } }
+ *   With it, every color token the page really has is retinted (retint.js);
+ *   without it (or before the page's sheets load), the fixed legacy list below.
+ */
+export function toClaudeAiCss(theme, page = {}) {
   const p = theme.palette
   const dark = theme.mode === 'dark'
   const deeper = mix(p.bg, dark ? '#000000' : '#ffffff', 0.35)
@@ -52,7 +60,16 @@ export function toClaudeAiCss(theme) {
     '--danger-900': t(mix(p.negative, p.bg, 0.85)),
     '--oncolor-100': t('#ffffff'),
   }
-  const vars = Object.entries(tokens).map(([k, v]) => `  ${k}: ${v} !important;`).join('\n')
+  const decl = map => Object.entries(map).map(([k, v]) => `  ${k}: ${v} !important;`).join('\n')
+  const live = page.root && Object.keys(page.root).length ? retintTokens(page.root, theme) : null
+  const vars = decl(live && Object.keys(live).length ? { ...live } : tokens)
+  // Tokens declared on inner elements (claude.ai's --df-* frame tokens) must be
+  // overridden on those elements: a declaration there beats an inherited one.
+  const scoped = Object.entries(page.scopes || {})
+    .map(([selector, map]) => [selector, retintTokens(map, theme)])
+    .filter(([, map]) => Object.keys(map).length)
+    .map(([selector, map]) => `html[data-chameleon] ${selector} {\n${decl(map)}\n}`)
+    .join('\n')
 
   const strip = renderPattern(theme.pattern, p)
   const lineH = Math.max(strip.height, 18)
@@ -71,9 +88,9 @@ export function toClaudeAiCss(theme) {
   return `/* chameleon: ${theme.name} (${theme.motif}, ${theme.pattern}) */
 ${sel}, ${sel} :root, ${sel} .dark, ${sel} [data-theme] {
 ${vars}
-  color-scheme: ${theme.mode};
   accent-color: ${p.accent};
 }
+${scoped}
 /* line styles: dividers become the project's pattern, with an icon ornament */
 ${sel} hr, ${sel} [role="separator"] {
   border: 0 !important;

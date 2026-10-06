@@ -20,9 +20,9 @@ async function save(info, theme, extra = {}) {
 }
 
 const load = theme => normalizeTheme(theme, { resolveIcon })
-const answer = theme => ({ css: toClaudeAiCss(theme), theme })
+const answer = (theme, page) => ({ css: toClaudeAiCss(theme, page), theme })
 
-async function resolve(info) {
+async function resolve(info, page = {}) {
   if (!info) return { css: null }
   const s = await settings()
   if (info.kind === 'chat' && !s.themeChats && !info.design) return { css: null }
@@ -33,7 +33,7 @@ async function resolve(info) {
     const json = extractDesignBlock(info.design.text)
     if (json) {
       const theme = normalizeTheme({ ...json, idea: info.idea }, { idea: info.idea, resolveIcon })
-      return answer(load(await save(info, theme, { source: 'claude', designId: info.design.id })))
+      return answer(load(await save(info, theme, { source: 'claude', designId: info.design.id })), page)
     }
   }
 
@@ -43,14 +43,14 @@ async function resolve(info) {
     const { theme } = await generateTheme({ idea: info.idea, projectName: info.name, resolveIcon })
     stored = await save(info, theme, { source: 'motif' })
   }
-  return answer(load(stored))
+  return answer(load(stored), page)
 }
 
 chrome.runtime.onMessage.addListener((msg, _sender, reply) => {
   const run = async () => {
     switch (msg.type) {
       case 'resolve':
-        return resolve(msg.info)
+        return resolve(msg.info, msg.page)
       case 'designPrompt':
         return { text: chatDesignPrompt({ idea: msg.info.idea, projectName: msg.info.name }) }
       case 'off':

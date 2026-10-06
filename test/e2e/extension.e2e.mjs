@@ -18,6 +18,7 @@ const DESIGN_REPLY = 'A warm, golden-hour film set: tungsten amber on deep charc
   pattern: 'filmstrip', icons: ['movie', 'camera', 'bulb', 'microphone-2', 'video', 'aperture'], logoIcon: 'movie', glyphs: ['🎬', '🎥', '💡', '🎙️', '🎞️'],
 }) + '\n```'
 let replyArrived = false
+let apiDown = false
 const ORG = '99999999-9999-4999-8999-999999999999'
 const projects = {
   '11111111-1111-4111-8111-111111111111': { name: 'Video editor app', first: 'I want to build a software for video editing' },
@@ -62,6 +63,7 @@ const html = readFileSync(join(root, 'test/e2e/fake-claude.html'), 'utf8')
 await context.route('https://claude.ai/**', route => {
   const url = new URL(route.request().url())
   if (url.pathname.startsWith('/api/')) {
+    if (apiDown) return route.fulfill({ status: 403, contentType: 'application/json', body: '{"error":"forbidden"}' })
     const body = api(url.pathname)
     return route.fulfill(body ? { status: 200, contentType: 'application/json', body: JSON.stringify(body) } : page404)
   }
@@ -75,7 +77,6 @@ const check = (ok, what) => {
   if (!ok) failures.push(what)
 }
 const themeId = () => page.evaluate(() => document.documentElement.getAttribute('data-chameleon'))
-const bg = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor)
 const waitTheme = async expected => {
   for (let i = 0; i < 60; i++) {
     const id = await themeId()
@@ -87,13 +88,21 @@ const waitTheme = async expected => {
 
 await page.goto('https://claude.ai/new')
 await page.waitForTimeout(800)
-const stockBg = await bg()
+const surfaces = () => page.evaluate(() => ({
+  frame: getComputedStyle(document.querySelector('.dframe-root')).backgroundColor,
+  nav: getComputedStyle(document.querySelector('nav')).backgroundColor,
+  send: getComputedStyle(document.querySelector('.send')).backgroundColor,
+}))
+const stock = await surfaces()
 check((await themeId()) === null, 'a page outside any project keeps the stock look')
 
 await page.click('text=Timeline scrubbing')
 const film = await waitTheme(true)
 check(film === 'video-editor-app', `a chat in "Video editor app" gets that project's theme (${film})`)
-check((await bg()) !== stockBg, 'the app background changed')
+const themed = await surfaces()
+check(themed.frame !== stock.frame, `the page frame (hsl(var(--df-*)) triplet token) is retinted (${themed.frame})`)
+check(themed.nav !== stock.nav, `the sidebar (--df-sidebar-bg on .dframe-root) is retinted (${themed.nav})`)
+check(themed.send !== stock.send, `the accent button (--cds-fill-accent hex) is retinted (${themed.send})`)
 const strip = await page.evaluate(() => getComputedStyle(document.body, '::before').backgroundImage)
 check(strip.includes('svg'), 'the film strip band is drawn across the top')
 await page.screenshot({ path: join(shots, 'video-editor.png') })
@@ -126,10 +135,22 @@ check((await themeId()) === 'golden-hour', 'other chats in the project use the d
 
 await page.click('text=Random question')
 check((await waitTheme(null)) === null, 'a chat outside any project goes back to stock')
-check((await bg()) === stockBg, 'stock background restored')
+check(JSON.stringify(await surfaces()) === JSON.stringify(stock), 'stock colors restored')
 
 await page.click('text=Video editor app')
 check((await waitTheme('golden-hour')) === 'golden-hour', 'the project page reuses its saved theme')
+
+// When claude.ai's internal API refuses us, the project is read from the page itself.
+apiDown = true
+await page.click('text=Order book feed')
+check((await waitTheme('day-trading-app')) === 'day-trading-app', 'with the API returning 403, the project is detected from the page')
+const report = await worker.evaluate(async () => {
+  const [tab] = await chrome.tabs.query({ url: 'https://claude.ai/*' })
+  return chrome.tabs.sendMessage(tab.id, { type: 'diagnose' })
+}).catch(e => ({ error: String(e) }))
+const text = JSON.stringify(report)
+check(/lookupError|403/.test(text) && /tokens|token/i.test(text), 'Copy diagnostics returns a report with the API error and token counts')
+check(!text.includes('Stream the order book'), 'the diagnostics report leaves out chat content')
 
 await context.close()
 if (failures.length) {
