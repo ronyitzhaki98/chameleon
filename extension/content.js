@@ -111,24 +111,32 @@
     return { kind: 'project', key: `project:${id}`, name, idea: name, design: null, viaPage: true }
   }
 
-  // Claude Code on the web (claude.ai/code/session_…): there is no project, so
-  // the repository the session works in plays that part, and the session's
-  // title (Claude names it after the first prompt) is the idea.
+  // Claude Code on the web (claude.ai/code/session_…): there is no project,
+  // so each session is its own, with its title (Claude names it after the
+  // first prompt) as the idea and its repository as extra context. Sessions
+  // in one repo still differ, because each one is usually a different idea.
   function sessionTitle() {
-    return document.title.replace(/\s*[|·–—-]\s*Claude(\s+Code)?\s*$/i, '').trim()
+    const title = document.title.replace(/\s*[|·–—-]\s*Claude(\s+Code)?\s*$/i, '').trim()
+    // Before Claude names the session the tab just says "Claude Code".
+    return /^(claude(\s+code)?|new session|untitled)?$/i.test(title) ? '' : title
   }
 
   const REPO = /^([A-Za-z0-9][\w.-]*)\/([A-Za-z][\w.-]*)$/
+  // Only the open session's own header and body: the sidebar lists every
+  // session with its repo, and reading it would give all of them the first one.
+  const OTHER = 'nav, aside, [role="navigation"], [role="complementary"], a[href^="/code/"], pre, code, [contenteditable="true"]'
   function findRepo() {
-    const link = [...document.querySelectorAll('a[href*="github.com/"]')]
+    const scope = document.querySelector('main') || document.body
+    if (!scope) return null
+    const link = [...scope.querySelectorAll('a[href*="github.com/"]')]
+      .filter(a => !a.closest(OTHER))
       .map(a => a.getAttribute('href').match(/github\.com\/([\w.-]+)\/([\w.-]+)/))
       .find(m => m && !['apps', 'settings', 'orgs', 'login'].includes(m[1]))
     if (link) return { repo: `${link[1]}/${link[2].replace(/\.git$/, '')}`, via: 'link' }
-    if (!document.body) return null
-    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT)
+    const walker = document.createTreeWalker(scope, NodeFilter.SHOW_TEXT)
     for (let n = walker.nextNode(), i = 0; n && i < 6000; n = walker.nextNode(), i++) {
       const text = n.textContent.trim()
-      if (text.length < 80 && REPO.test(text) && !n.parentElement.closest('pre, code, [contenteditable="true"]')) return { repo: text, via: 'text' }
+      if (text.length < 80 && REPO.test(text) && !n.parentElement.closest(OTHER)) return { repo: text, via: 'text' }
     }
     return null
   }
@@ -152,14 +160,15 @@
     const session = location.pathname.match(/^\/code\/(session_[\w-]+)/)?.[1]
     if (!session) return null
     const title = sessionTitle()
+    // Not named yet: look again when the title arrives (it is in the signature).
+    if (!title) return null
     const found = findRepo()
     const repoName = found?.repo.split('/')[1] || ''
-    if (!title && !found) return null
     return {
       kind: 'code',
-      key: found ? `repo:${found.repo.toLowerCase()}` : `code:${session}`,
-      name: repoName || title,
-      idea: title && repoName ? `${title} (${repoName})` : title || repoName,
+      key: `code:${session}`,
+      name: title,
+      idea: repoName ? `${title} (repo: ${repoName})` : title,
       design: codeDesign(),
       viaPage: true,
       repoVia: found?.via || null,

@@ -105,3 +105,13 @@ test('live tokens are retinted in the format the page wrote them', async () => {
   const css = toClaudeAiCss(theme, { root: page, scopes: { '.dframe-root': { '--df-sidebar-bg': '#1f1e1d' } } })
   assert.match(css, /html\[data-chameleon\] \.dframe-root \{[^}]*--df-sidebar-bg/)
 })
+
+test('two ideas with the same motif get different starter palettes', async () => {
+  const { fallbackTheme } = await import('../core/generate.js')
+  const a = fallbackTheme({ idea: 'a day trading app with candlestick charts', projectName: 'Bull desk', resolveIcon })
+  const b = fallbackTheme({ idea: 'a crypto portfolio tracker for traders', projectName: 'Coin watch', resolveIcon })
+  assert.equal(a.motif, b.motif)
+  assert.notEqual(a.palette.accent, b.palette.accent)
+  const again = fallbackTheme({ idea: 'a day trading app with candlestick charts', projectName: 'Bull desk', resolveIcon })
+  assert.equal(again.palette.accent, a.palette.accent, 'stable for the same project')
+})

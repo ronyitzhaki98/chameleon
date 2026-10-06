@@ -154,7 +154,7 @@ for (let i = 0; i < 60; i++) {
 }
 const code = await themeId()
 check(Boolean(code) && code !== 'golden-hour', `a Claude Code session gets its own theme (${code})`)
-check(codeState?.info?.key === 'repo:ronyitzhaki98/bull-desk', `the session is keyed by its repo (${codeState?.info?.key})`)
+check(codeState?.info?.key === 'code:session_01TestTradingBot' && /bull-desk/.test(codeState.info.idea), `the session is its own project, with its repo as context (${codeState?.info?.idea})`)
 check(codeState?.theme?.motif === 'finance', `the session's title picks the motif (${codeState?.theme?.motif})`)
 await page.evaluate(json => {
   const pre = document.createElement('pre')
@@ -163,6 +163,14 @@ await page.evaluate(json => {
 }, DESIGN_REPLY.match(/```chameleon\n([\s\S]*?)\n```/)[1])
 const codeDesigned = await waitTheme('golden-hour')
 check(codeDesigned === 'golden-hour', `a design Claude writes in the session is picked up (${codeDesigned})`)
+await page.click('text=Film timeline')
+let filmState = null
+for (let i = 0; i < 60; i++) {
+  filmState = await tabState()
+  if (filmState?.info?.key === 'code:session_01TestFilmTimeline' && filmState.theme) break
+  await page.waitForTimeout(100)
+}
+check(filmState?.theme?.motif === 'film' && /film-lab/.test(filmState.info.idea), `another session gets its own theme, not the sidebar's first repo (${filmState?.theme?.motif}, ${filmState?.info?.idea})`)
 
 // When claude.ai's internal API refuses us, the project is read from the page itself.
 apiDown = true

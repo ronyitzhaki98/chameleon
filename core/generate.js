@@ -9,6 +9,7 @@
 // `complete(system, prompt)` resolves the reply's text. With no `complete`, or
 // when the call fails, the keyword fallback still returns a full theme.
 
+import { hexToHsl, hslToHex } from './color.js'
 import { MOTIFS, MOTIF_IDS, matchMotif } from './motifs.js'
 import { PATTERN_IDS } from './patterns.js'
 import { PALETTE_KEYS, normalizeTheme } from './theme.js'
@@ -80,9 +81,29 @@ export function extractJson(text) {
   return null
 }
 
+// A small, stable twist per idea, so two projects that land on the same motif
+// don't look identical: the surfaces and accents turn a little around the hue
+// wheel and the icons come in a different order. Gains and losses keep their
+// red and green.
+function vary(base, seedText) {
+  let h = 2166136261
+  for (const c of String(seedText)) h = Math.imul(h ^ c.charCodeAt(0), 16777619)
+  const seed = h >>> 0
+  const turn = (seed % 41) - 20
+  const palette = { ...base.palette }
+  for (const key of ['bg', 'surface', 'surfaceAlt', 'border', 'accent', 'accent2']) {
+    if (!palette[key]) continue
+    const c = hexToHsl(palette[key])
+    palette[key] = hslToHex({ ...c, h: (c.h + turn + 360) % 360 })
+  }
+  const icons = base.icons || []
+  const shift = icons.length ? (seed >>> 8) % icons.length : 0
+  return { ...base, palette, icons: [...icons.slice(shift), ...icons.slice(0, shift)] }
+}
+
 export function fallbackTheme({ idea, projectName, resolveIcon }) {
   const motif = matchMotif(`${projectName || ''} ${idea || ''}`)
-  const base = MOTIFS[motif]
+  const base = vary(MOTIFS[motif], `${projectName || ''}|${idea || ''}`)
   return normalizeTheme(
     { ...base, motif, name: projectName ? `${projectName}` : base.name, idea },
     { idea, fallbackMotif: motif, resolveIcon },
