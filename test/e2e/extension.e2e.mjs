@@ -170,7 +170,7 @@ for (let i = 0; i < 60; i++) {
   if (filmState?.info?.key === 'code:session_01TestFilmTimeline' && filmState.theme) break
   await page.waitForTimeout(100)
 }
-check(filmState?.theme?.motif === 'film' && /film-lab/.test(filmState.info.idea), `another session gets its own theme, not the sidebar's first repo (${filmState?.theme?.motif}, ${filmState?.info?.idea})`)
+check(filmState?.theme?.motif === 'film' && /film-lab/.test(filmState.info.idea), `another session gets its own theme, not the sidebar's first repo, named from its sidebar entry (${filmState?.theme?.motif}, ${filmState?.info?.idea})`)
 
 // When claude.ai's internal API refuses us, the project is read from the page itself.
 apiDown = true

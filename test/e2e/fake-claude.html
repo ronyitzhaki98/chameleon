@@ -69,7 +69,9 @@
     if (p.startsWith('/code/')) {
       // Claude Code on the web: no project, a repo picker and a session title.
       const trading = p.includes('Trading')
-      document.title = trading ? 'Build a candlestick chart widget for the trading dashboard - Claude Code' : 'Video editing timeline with film strips and camera controls - Claude Code'
+      // The trading session has a named tab; the film one keeps a generic tab
+      // title, so its name has to come from its sidebar entry.
+      document.title = trading ? 'Build a candlestick chart widget for the trading dashboard - Claude Code' : 'Claude Code'
       document.querySelectorAll('nav a').forEach(a => a.classList.toggle('on', a.getAttribute('href') === p))
       document.getElementById('main').innerHTML = `
         <header><button class="repo"><span>ronyitzhaki98/${trading ? 'bull-desk' : 'film-lab'}</span></button> <span>main</span></header>

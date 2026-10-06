@@ -116,9 +116,24 @@
   // first prompt) as the idea and its repository as extra context. Sessions
   // in one repo still differ, because each one is usually a different idea.
   function sessionTitle() {
-    const title = document.title.replace(/\s*[|·–—-]\s*Claude(\s+Code)?\s*$/i, '').trim()
-    // Before Claude names the session the tab just says "Claude Code".
-    return /^(claude(\s+code)?|new session|untitled)?$/i.test(title) ? '' : title
+    const clean = t => String(t || '').replace(/\s*[|·–—-]\s*Claude(\s+Code)?\s*$/i, '').replace(/\s+/g, ' ').trim()
+    const generic = t => /^(claude(\s+code)?|code|new session|untitled|loading…?)?$/i.test(t)
+    const fromTab = clean(document.title)
+    if (!generic(fromTab)) return fromTab
+    // The tab may keep a generic title; the sidebar entry for the open session
+    // (or the session header) carries its name. Take its first line of text,
+    // which skips the repo name and time shown under it.
+    const id = location.pathname.match(/^\/code\/(session_[\w-]+)/)?.[1]
+    const places = [id && document.querySelector(`a[href$="/code/${id}"], a[href*="/code/${id}?"]`), document.querySelector('main h1, header h1, [data-testid*="session-title"], [data-testid*="title"]')]
+    for (const el of places) {
+      if (!el) continue
+      const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT)
+      for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+        const text = clean(n.textContent)
+        if (text.length > 2 && !generic(text) && !REPO.test(text)) return text
+      }
+    }
+    return ''
   }
 
   const REPO = /^([A-Za-z0-9][\w.-]*)\/([A-Za-z][\w.-]*)$/
@@ -160,15 +175,16 @@
     const session = location.pathname.match(/^\/code\/(session_[\w-]+)/)?.[1]
     if (!session) return null
     const title = sessionTitle()
-    // Not named yet: look again when the title arrives (it is in the signature).
-    if (!title) return null
     const found = findRepo()
     const repoName = found?.repo.split('/')[1] || ''
+    // With no name found yet, still theme it (the signature includes the title,
+    // so it is redone when a name shows up); the session id keeps unnamed
+    // sessions from all looking the same.
     return {
       kind: 'code',
       key: `code:${session}`,
-      name: title,
-      idea: repoName ? `${title} (repo: ${repoName})` : title,
+      name: title || repoName || 'Code session',
+      idea: title ? (repoName ? `${title} (repo: ${repoName})` : title) : repoName || `Claude Code session ${session.slice(-6)}`,
       design: codeDesign(),
       viaPage: true,
       repoVia: found?.via || null,
@@ -195,7 +211,7 @@
         sample: colorish.filter(([k]) => /surface|bg-|text-|accent|brand|gray-5/.test(k)).slice(0, 24),
         scopes: Object.fromEntries(Object.entries(page.scopes).map(([k, v]) => [k, Object.keys(v).length])),
       },
-      code: /^\/code\//.test(location.pathname) ? { titleChars: sessionTitle().length, repoFound: findRepo()?.via || null, githubLinks: document.querySelectorAll('a[href*="github.com/"]').length } : undefined,
+      code: /^\/code\//.test(location.pathname) ? { titleChars: sessionTitle().length, tabTitleGeneric: /^(claude(\s+code)?)?$/i.test(document.title.trim()), sessionLink: Boolean(document.querySelector(`a[href*="${location.pathname}"]`)), repoFound: findRepo()?.via || null, githubLinks: document.querySelectorAll('a[href*="github.com/"]').length } : undefined,
       composer: Boolean(document.querySelector('div[contenteditable="true"], textarea')),
     }
   }
