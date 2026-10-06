@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// skinshift design "<idea>" [--name <project>] [--claude-code]   design a theme with Claude Code (`claude -p`, your own plan)
-// skinshift prompt "<idea>" [--name <project>]                    print the design request to paste into any Claude chat
-// skinshift preview [--out docs/preview.html]                    write a gallery of the built-in motifs
+// chameleon design "<idea>" [--name <project>] [--claude-code]   design a theme with Claude Code (`claude -p`, your own plan)
+// chameleon prompt "<idea>" [--name <project>]                    print the design request to paste into any Claude chat
+// chameleon preview [--out docs/preview.html]                    write a gallery of the built-in motifs
 import { execFileSync } from 'node:child_process'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
@@ -25,7 +25,7 @@ if (command === 'design') {
   const toClaudeCode = flag('--claude-code') !== undefined
   const idea = rest.join(' ')
   if (!idea) {
-    console.error('usage: skinshift design "<idea>" [--name <project>] [--claude-code]')
+    console.error('usage: chameleon design "<idea>" [--name <project>] [--claude-code]')
     process.exit(1)
   }
   const { theme, source, error } = await generateTheme({
@@ -36,7 +36,7 @@ if (command === 'design') {
   })
   if (error) console.error(`model call failed, used the offline motif: ${error}`)
   if (toClaudeCode) {
-    const file = join(process.env.CLAUDE_CONFIG_DIR || join(homedir(), '.claude'), 'themes', `skinshift-${theme.id}.json`)
+    const file = join(process.env.CLAUDE_CONFIG_DIR || join(homedir(), '.claude'), 'themes', `chameleon-${theme.id}.json`)
     mkdirSync(dirname(file), { recursive: true })
     writeFileSync(file, JSON.stringify(toClaudeCodeTheme(theme), null, 2))
     console.error(`wrote ${file}; pick it with /theme in Claude Code`)
@@ -61,15 +61,15 @@ if (command === 'design') {
     </section>`
   })
   mkdirSync(dirname(out), { recursive: true })
-  writeFileSync(out, `<!doctype html><meta charset="utf-8"><title>Skinshift motifs</title>
+  writeFileSync(out, `<!doctype html><meta charset="utf-8"><title>Chameleon motifs</title>
 <style>body{font:14px system-ui;margin:24px;background:#0e0e0e;color:#eee}main{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
 section{border-radius:14px;padding:14px;display:grid;gap:10px}header{display:flex;gap:10px;align-items:center}header small{margin-left:auto}
 .logo{width:40px;height:40px}
 .strip{background-repeat:repeat-x;background-position:left center}.bubble{padding:12px;border-radius:10px;display:flex;gap:14px}
 .sw{display:flex;gap:3px}.sw i{width:18px;height:18px;border-radius:4px}button{border:0;border-radius:8px;padding:6px 12px;justify-self:end}</style>
-<h1>Skinshift built-in motifs</h1><p>The starter themes every new project gets for free. "Design with Claude" makes a custom one from any palette, line style and icons.</p><main>${cards.join('')}</main>`)
+<h1>Chameleon built-in motifs</h1><p>The starter themes every new project gets for free. "Design with Claude" makes a custom one from any palette, line style and icons.</p><main>${cards.join('')}</main>`)
   console.log(`wrote ${out}`)
 } else {
-  console.error('usage: skinshift design "<idea>" [--name <project>] [--claude-code] | skinshift prompt "<idea>" | skinshift preview [--out file]')
+  console.error('usage: chameleon design "<idea>" [--name <project>] [--claude-code] | chameleon prompt "<idea>" | chameleon preview [--out file]')
   process.exit(1)
 }

@@ -1,5 +1,5 @@
 // Runs in Claude Desktop's Electron main process once desktop/patch.mjs has
-// added `require('./skinshift/injector.cjs').install()` to the app's entry.
+// added `require('./chameleon/injector.cjs').install()` to the app's entry.
 //
 // For every window showing claude.ai it works out the open project (the same
 // detector the browser extension uses, run in the page) and applies that
@@ -14,7 +14,7 @@ const os = require('node:os')
 const path = require('node:path')
 const { pathToFileURL } = require('node:url')
 
-const HOME = path.join(os.homedir(), '.skinshift')
+const HOME = path.join(os.homedir(), '.chameleon')
 const THEMES = path.join(HOME, 'themes')
 
 function readJson(file, fallback) {
@@ -32,7 +32,7 @@ function themeFile(key) {
 function createInjector({ core, detect, config = () => readJson(path.join(HOME, 'config.json'), {}), log = () => {} }) {
 
   // Free and keyless, like the extension: a starter theme from the motifs and
-  // icon pack, or the one Claude designed in a chat (a ```skinshift block).
+  // icon pack, or the one Claude designed in a chat (a ```chameleon block).
   async function themeFor(info) {
     if (!info) return null
     const cfg = config()
@@ -77,12 +77,12 @@ function createInjector({ core, detect, config = () => readJson(path.join(HOME, 
         appliedFor = theme ? tag : null
         if (theme) {
           cssKey = await wc.insertCSS(core.toClaudeAiCss(theme), { cssOrigin: 'user' })
-          await wc.executeJavaScript(`document.documentElement.setAttribute('data-skinshift', ${JSON.stringify(theme.id)})`)
+          await wc.executeJavaScript(`document.documentElement.setAttribute('data-chameleon', ${JSON.stringify(theme.id)})`)
         } else {
-          await wc.executeJavaScript(`document.documentElement.removeAttribute('data-skinshift')`)
+          await wc.executeJavaScript(`document.documentElement.removeAttribute('data-chameleon')`)
         }
       } catch (error) {
-        log(`skinshift: ${error && error.message}`)
+        log(`chameleon: ${error && error.message}`)
       }
     }
     wc.on('did-finish-load', () => { appliedFor = null; cssKey = null; apply() })
@@ -108,11 +108,11 @@ function install() {
         })
         injector.attach(wc)
       } catch (error) {
-        console.warn(`skinshift: ${error && error.message}`)
+        console.warn(`chameleon: ${error && error.message}`)
       }
     })
   } catch (error) {
-    console.warn(`skinshift: not installed: ${error && error.message}`)
+    console.warn(`chameleon: not installed: ${error && error.message}`)
   }
 }
 

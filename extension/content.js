@@ -3,10 +3,10 @@
 // URL is watched rather than page loads.
 //
 // "Design with Claude" (popup): puts a design request in the chat composer. The
-// person presses send; when Claude's reply with a ```skinshift block appears,
+// person presses send; when Claude's reply with a ```chameleon block appears,
 // the detector sees it and the theme switches. No API key, no extra cost.
 (() => {
-  const STYLE_ID = 'skinshift-style'
+  const STYLE_ID = 'chameleon-style'
   let lastPath = null
   let current = null // { info, theme }
   let seq = 0
@@ -16,7 +16,7 @@
     let style = document.getElementById(STYLE_ID)
     if (!css) {
       style?.remove()
-      document.documentElement.removeAttribute('data-skinshift')
+      document.documentElement.removeAttribute('data-chameleon')
       return
     }
     if (!style) {
@@ -26,7 +26,7 @@
     style.textContent = css
     // Keep it last so it wins ties with the app's own sheets.
     ;(document.head || document.documentElement).appendChild(style)
-    document.documentElement.setAttribute('data-skinshift', theme.id)
+    document.documentElement.setAttribute('data-chameleon', theme.id)
   }
 
   async function refresh(force = false) {
@@ -36,9 +36,9 @@
     const mine = ++seq
     let info = null
     try {
-      info = await globalThis.SkinshiftDetect(location, fetch.bind(globalThis))
+      info = await globalThis.ChameleonDetect(location, fetch.bind(globalThis))
     } catch (e) {
-      console.debug('[skinshift] detect failed', e)
+      console.debug('[chameleon] detect failed', e)
     }
     if (mine !== seq) return
     const sameDesign = (info?.design?.id || null) === (current?.info?.design?.id || null)

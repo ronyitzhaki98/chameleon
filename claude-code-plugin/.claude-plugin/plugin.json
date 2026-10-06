@@ -1,5 +1,5 @@
 {
-  "name": "skinshift",
+  "name": "chameleon",
   "version": "0.1.0",
   "description": "Generates a theme for each project from its first prompt and switches Claude Code's colors, line styles and icons to match.",
   "types": "./types/index.d.ts",

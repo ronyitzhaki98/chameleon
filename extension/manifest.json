@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Skinshift",
+  "name": "Chameleon",
   "version": "0.1.0",
   "description": "Gives every Claude project its own theme: colors, line styles, icons and a logo, switching as you move between projects. Free, no API keys.",
   "permissions": [
@@ -27,7 +27,7 @@
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Skinshift"
+    "default_title": "Chameleon"
   },
   "options_page": "options.html"
 }

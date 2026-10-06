@@ -20,7 +20,7 @@ function engine(on: any, root: string) {
   mock.store(on)
 }
 
-describe('skinshift', () => {
+describe('chameleon', () => {
   test('/design designs a theme, writes the Claude Code theme file and switches to it', async ($, on) => {
     const written: Record<string, string> = {}
     const configSets: unknown[] = []
@@ -45,15 +45,15 @@ describe('skinshift', () => {
 
     expect(JSON.stringify(out)).toContain('Cutting Room')
     expect(prompt).toContain('video editing')
-    expect(configSets).toContain('custom:skinshift-cutting-room')
-    const file = Object.entries(written).find(([path]) => path.endsWith('/themes/skinshift-cutting-room.json'))
+    expect(configSets).toContain('custom:chameleon-cutting-room')
+    const file = Object.entries(written).find(([path]) => path.endsWith('/themes/chameleon-cutting-room.json'))
     expect(file).toBeDefined()
     const cc = JSON.parse(file![1])
     expect(cc.base).toBe('dark')
     expect(cc.overrides.claude).toBe('#f5c518')
 
     for (const surface of ['terminal', 'desktop'] as const) {
-      const ui = await $.ui.mount({ plugin: 'skinshift', surface, component: 'AbovePrompt', props: { bodyColumns: 80, hasSurvey: false } as never })
+      const ui = await $.ui.mount({ plugin: 'chameleon', surface, component: 'AbovePrompt', props: { bodyColumns: 80, hasSurvey: false } as never })
       expect(await ui.find({ type: 'Text', text: /Cutting Room/ })).toBeDefined()
       expect(await ui.find({ type: 'Text', text: /▮▯/ })).toBeDefined()
     }
@@ -93,8 +93,8 @@ describe('skinshift', () => {
 
     await $.session.start({ cwd: root, surface: 'terminal', isInteractive: true } as never)
     await $.prompt.submit({ text: 'I want to build a software for video editing', wait: false } as never)
-    for (let i = 0; i < 100 && !configSets.includes('custom:skinshift-cutting-room'); i++) await new Promise(r => setTimeout(r, 10))
-    expect(configSets).toContain('custom:skinshift-cutting-room')
+    for (let i = 0; i < 100 && !configSets.includes('custom:chameleon-cutting-room'); i++) await new Promise(r => setTimeout(r, 10))
+    expect(configSets).toContain('custom:chameleon-cutting-room')
 
     // A project with no theme yet: the person's own theme comes back.
     root = '/work/notes'
@@ -104,6 +104,6 @@ describe('skinshift', () => {
     // Back to the film project: its saved theme returns without a model call.
     root = '/work/video-editor'
     await $.session.start({ cwd: root, surface: 'terminal', isInteractive: true } as never)
-    expect(current).toBe('custom:skinshift-cutting-room')
+    expect(current).toBe('custom:chameleon-cutting-room')
   })
 })

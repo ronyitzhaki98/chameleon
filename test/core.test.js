@@ -52,10 +52,10 @@ test('the logo badge is a clean SVG in the theme colors', () => {
 })
 
 test('a design block in a chat reply is picked up', () => {
-  const reply = 'Golden-hour film set.\n```skinshift\n{"name":"Golden Hour","icons":["movie"]}\n```'
+  const reply = 'Golden-hour film set.\n```chameleon\n{"name":"Golden Hour","icons":["movie"]}\n```'
   assert.deepEqual(extractDesignBlock(reply), { name: 'Golden Hour', icons: ['movie'] })
   assert.equal(extractDesignBlock('```json\n{"a":1}\n```'), null)
-  assert.match(chatDesignPrompt({ idea: 'video editing', projectName: 'Video editor app' }), /```skinshift/)
+  assert.match(chatDesignPrompt({ idea: 'video editing', projectName: 'Video editor app' }), /```chameleon/)
 })
 
 test('every pattern renders an SVG', () => {
@@ -65,7 +65,7 @@ test('every pattern renders an SVG', () => {
 
 test('claude.ai CSS is scoped and sets the color tokens as HSL triplets', () => {
   const css = toClaudeAiCss(normalizeTheme({ motif: 'finance' }))
-  assert.match(css, /html\[data-skinshift\]/)
+  assert.match(css, /html\[data-chameleon\]/)
   assert.match(css, /--bg-100: [\d.]+ [\d.]+% [\d.]+% !important/)
   for (const [, uri] of css.matchAll(/url\("data:image\/svg\+xml;charset=utf-8,([^"]+)"\)/g)) {
     assert.ok(!/<script|on\w+=/i.test(decodeURIComponent(uri)))

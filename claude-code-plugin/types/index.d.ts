@@ -9,6 +9,6 @@ export type ActiveTheme = {
 
 declare module 'claude-code' {
   interface PluginState {
-    'skinshift': { active: ActiveTheme | null; designing: boolean; bandHidden: boolean }
+    'chameleon': { active: ActiveTheme | null; designing: boolean; bandHidden: boolean }
   }
 }

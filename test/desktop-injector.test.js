@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import * as core from '../core/index.js'
 
-process.env.HOME = mkdtempSync(join(tmpdir(), 'skinshift-home-'))
+process.env.HOME = mkdtempSync(join(tmpdir(), 'chameleon-home-'))
 const require = createRequire(import.meta.url)
 const { createInjector } = require('../desktop/injector.cjs')
 

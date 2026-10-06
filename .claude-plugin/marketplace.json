@@ -1,9 +1,9 @@
 {
-  "name": "skinshift",
+  "name": "chameleon",
   "owner": { "name": "Ron", "url": "https://github.com/ronyitzhaki98" },
   "plugins": [
     {
-      "name": "skinshift",
+      "name": "chameleon",
       "source": "./claude-code-plugin",
       "description": "Generates a theme for each project from its first prompt and switches Claude Code's colors, line styles and icons to match."
     }

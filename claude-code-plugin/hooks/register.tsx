@@ -5,9 +5,9 @@ import type { ActiveTheme } from '../types'
 import { terminalLine, toClaudeCodeTheme } from './core/compile.js'
 import { generateTheme } from './core/generate.js'
 
-const active = atom({ plugin: 'skinshift', key: 'active' } as const, null)
-const designing = atom({ plugin: 'skinshift', key: 'designing' } as const, false)
-const bandHidden = atom({ plugin: 'skinshift', key: 'bandHidden' } as const, false)
+const active = atom({ plugin: 'chameleon', key: 'active' } as const, null)
+const designing = atom({ plugin: 'chameleon', key: 'designing' } as const, false)
+const bandHidden = atom({ plugin: 'chameleon', key: 'bandHidden' } as const, false)
 
 type Theme = ActiveTheme & { idea: string; motif: string; icons: string[]; logoIcon: string }
 type Options = { model?: string; auto?: boolean }
@@ -22,11 +22,11 @@ async function themesDir($: EngineInterface) {
 
 /** Writes the Claude Code theme file and switches the session to it. */
 async function applyTheme($: EngineInterface, theme: Theme) {
-  const slug = `skinshift-${theme.id}`
+  const slug = `chameleon-${theme.id}`
   await $.fs.write(`${await themesDir($)}/${slug}.json`, JSON.stringify(toClaudeCodeTheme(theme), null, 2))
   const rows = await $.config.list()
   const current = rows.find(row => row.key === 'theme')
-  if (current && !String(current.value).startsWith('custom:skinshift-')) {
+  if (current && !String(current.value).startsWith('custom:chameleon-')) {
     await $.store.set('originalTheme', current.value)
   }
   const result = await $.config.set({ key: 'theme', value: `custom:${slug}` })
@@ -47,7 +47,7 @@ async function restoreTheme($: EngineInterface) {
   const original = await $.store.get('originalTheme')
   const rows = await $.config.list()
   const current = rows.find(row => row.key === 'theme')
-  if (original !== undefined && current && String(current.value).startsWith('custom:skinshift-')) {
+  if (original !== undefined && current && String(current.value).startsWith('custom:chameleon-')) {
     await $.config.set({ key: 'theme', value: original as string })
   }
   await update($, active, () => null)
@@ -80,7 +80,7 @@ export const register: Register = (on, options: Options) => {
   on('session.start', async ($, e, next) => {
     await $.command.register({
       name: 'design',
-      description: 'Design a theme for this project (skinshift): /design [idea] | show | off',
+      description: 'Design a theme for this project (chameleon): /design [idea] | show | off',
       argumentHint: '[idea | show | off]',
     })
     const root = await $.session.root()

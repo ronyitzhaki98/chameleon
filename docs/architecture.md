@@ -24,7 +24,7 @@ Findings from researching each surface (October 2026).
 
 - claude.ai colors itself from Tailwind tokens held as HSL triplets on `:root` (`--bg-000`…`--bg-500`, `--text-000`…`--text-500`, `--accent-main-*`, `--accent-brand`, `--border-*`, `--danger-*`). Overriding them recolors the whole app.
 - Decorations ride on pseudo-elements of `<html>` and `<body>` (top band, logo badge) and on `hr` / `[role=separator]` (line styles), so they don't depend on the app's markup.
-- A browser extension is the normal, supported way to restyle a website for yourself. Everything is scoped to `html[data-skinshift]`, so removing the attribute restores the stock look.
+- A browser extension is the normal, supported way to restyle a website for yourself. Everything is scoped to `html[data-chameleon]`, so removing the attribute restores the stock look.
 - Token names are claude.ai internals and can change. They are all in `toClaudeAiCss()` in `core/compile.js`, so a change is a one-place fix.
 
 ### Detecting the project: works, uses internal endpoints
@@ -61,13 +61,13 @@ These endpoints are undocumented. If they change, detection returns nothing and 
 
 ### "/design"
 
-The brief asks for themes "generated via /design". There is no public API for Claude's design tools that another app can call, so Skinshift's `/design` is its own command (Claude Code) and "Design with Claude" button (extension popup) that asks Claude to act as the designer and return a structured theme (palette, motif, line style, icon names, logo icon). The model never draws the artwork itself: logos, icons and line styles are composed from the bundled icon set and hand-drawn patterns, which is what keeps them looking consistent.
+The brief asks for themes "generated via /design". There is no public API for Claude's design tools that another app can call, so Chameleon's `/design` is its own command (Claude Code) and "Design with Claude" button (extension popup) that asks Claude to act as the designer and return a structured theme (palette, motif, line style, icon names, logo icon). The model never draws the artwork itself: logos, icons and line styles are composed from the bundled icon set and hand-drawn patterns, which is what keeps them looking consistent.
 
 ## Data and privacy
 
 - Extension: themes live in `chrome.storage.local`. It talks to nothing but claude.ai, as you; the design request is a normal message in your own chat.
 - Claude Code: themes live in the plugin's store and `~/.claude/themes/`.
-- Desktop: `~/.skinshift/config.json` (key, model) and `~/.skinshift/themes/`.
+- Desktop: `~/.chameleon/config.json` (key, model) and `~/.chameleon/themes/`.
 
 ## Ideas for later
 

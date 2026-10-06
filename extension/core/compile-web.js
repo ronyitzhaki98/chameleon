@@ -10,7 +10,7 @@ import { renderPattern, svgDataUri } from './patterns.js'
  * tokens held as HSL triplets on :root (--bg-100: "60 2.7% 14.5%"). Overriding
  * them recolors the whole app; the decorations ride on <html>/<body> pseudo-
  * elements and on dividers, so they survive markup changes. Everything is
- * scoped to html[data-skinshift]: removing the attribute restores stock.
+ * scoped to html[data-chameleon]: removing the attribute restores stock.
  *
  * These token names are claude.ai internals, not a public API: they live in
  * this one function so a change on claude.ai is a one-place fix.
@@ -66,9 +66,9 @@ export function toClaudeAiCss(theme) {
     `url("${icon(i)}") center / 18px 18px no-repeat, ` +
     `url("${half('left')}") left center / calc(50% - 22px) ${strip.height}px no-repeat, ` +
     `url("${half('right')}") right center / calc(50% - 22px) ${strip.height}px no-repeat`
-  const sel = 'html[data-skinshift]'
+  const sel = 'html[data-chameleon]'
 
-  return `/* skinshift: ${theme.name} (${theme.motif}, ${theme.pattern}) */
+  return `/* chameleon: ${theme.name} (${theme.motif}, ${theme.pattern}) */
 ${sel}, ${sel} :root, ${sel} .dark, ${sel} [data-theme] {
 ${vars}
   color-scheme: ${theme.mode};

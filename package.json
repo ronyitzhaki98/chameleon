@@ -1,17 +1,17 @@
 {
-  "name": "skinshift",
+  "name": "chameleon",
   "version": "0.1.0",
   "description": "Per-project generated themes for Claude (claude.ai, Claude Desktop) and Claude Code.",
   "type": "module",
   "license": "MIT",
   "bin": {
-    "skinshift": "cli/skinshift.js"
+    "chameleon": "cli/chameleon.js"
   },
   "scripts": {
     "build": "node scripts/build.mjs",
     "test": "node --test test/*.test.js",
     "test:e2e": "node scripts/build.mjs && node test/e2e/extension.e2e.mjs",
-    "preview": "node scripts/build.mjs && node cli/skinshift.js preview",
+    "preview": "node scripts/build.mjs && node cli/chameleon.js preview",
     "test:plugin": "node scripts/build.mjs && claude plugin validate claude-code-plugin && claude plugin test claude-code-plugin",
     "build:icons": "node scripts/build-icons.mjs"
   },

@@ -9,7 +9,7 @@ export function toClaudeCodeTheme(theme) {
   const p = theme.palette
   const dark = theme.mode === 'dark'
   return {
-    name: `${theme.name} (skinshift)`,
+    name: `${theme.name} (chameleon)`,
     base: dark ? 'dark' : 'light',
     overrides: {
       claude: p.accent,

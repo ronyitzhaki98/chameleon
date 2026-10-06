@@ -4,10 +4,10 @@
 
 ## What it does
 
-`desktop/patch.mjs` backs up the app's `app.asar`, adds a `skinshift/` folder with the injector, the claude.ai project detector and the theme core, and puts one guarded line at the top of the app's main entry:
+`desktop/patch.mjs` backs up the app's `app.asar`, adds a `chameleon/` folder with the injector, the claude.ai project detector and the theme core, and puts one guarded line at the top of the app's main entry:
 
 ```js
-/* skinshift */ try { require('./skinshift/injector.cjs').install() } catch (e) { console.warn('skinshift', e) }
+/* chameleon */ try { require('./chameleon/injector.cjs').install() } catch (e) { console.warn('chameleon', e) }
 ```
 
 The injector watches each window that shows claude.ai, detects the open project and applies its theme with `webContents.insertCSS()`, swapping it as you move between chats. A failure in the injector is caught, so it can't stop the app from starting.
@@ -16,7 +16,7 @@ The injector watches each window that shows claude.ai, detects the open project 
 
 ```bash
 # optional settings: { "auto": true, "themeChats": false }
-mkdir -p ~/.skinshift && echo '{ "auto": true }' > ~/.skinshift/config.json
+mkdir -p ~/.chameleon && echo '{ "auto": true }' > ~/.chameleon/config.json
 
 node desktop/patch.mjs status              # finds app.asar, or pass --app <path>
 sudo node desktop/patch.mjs install        # backs up, patches; restart Claude Desktop

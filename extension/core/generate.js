@@ -4,7 +4,7 @@
 // already has, through whichever door the target has:
 //   - the Claude Code plugin calls the session's own model ($.model.complete),
 //   - the browser extension puts chatDesignPrompt() into the person's claude.ai
-//     chat; they press send, and the reply's ```skinshift block is picked up,
+//     chat; they press send, and the reply's ```chameleon block is picked up,
 //   - the CLI runs `claude -p`.
 // `complete(system, prompt)` resolves the reply's text. With no `complete`, or
 // when the call fails, the keyword fallback still returns a full theme.
@@ -30,16 +30,16 @@ ${FIELDS}`
 /** What the extension puts in the person's chat: the request and the reply format. */
 export function chatDesignPrompt({ idea, projectName }) {
   return [
-    `Design a Skinshift theme for this project${projectName ? ` ("${projectName}")` : ''}: an interface skin that makes this workspace feel like the project's world, tasteful and readable first.`,
+    `Design a Chameleon theme for this project${projectName ? ` ("${projectName}")` : ''}: an interface skin that makes this workspace feel like the project's world, tasteful and readable first.`,
     idea ? `The project's idea: ${String(idea).slice(0, 1500)}` : null,
-    `Reply with a short line about the concept, then one code block fenced as \`\`\`skinshift containing a JSON object with:\n${FIELDS}`,
+    `Reply with a short line about the concept, then one code block fenced as \`\`\`chameleon containing a JSON object with:\n${FIELDS}`,
   ].filter(Boolean).join('\n\n')
 }
 
-/** The JSON inside the last ```skinshift block of a message, or null. */
+/** The JSON inside the last ```chameleon block of a message, or null. */
 export function extractDesignBlock(text) {
   if (typeof text !== 'string') return null
-  const blocks = [...text.matchAll(/```skinshift\s*([\s\S]*?)```/g)]
+  const blocks = [...text.matchAll(/```chameleon\s*([\s\S]*?)```/g)]
   return blocks.length ? extractJson(blocks[blocks.length - 1][1]) : null
 }
 

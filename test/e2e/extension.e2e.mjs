@@ -12,7 +12,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '../..')
 const shots = join(root, 'docs/screenshots')
 mkdirSync(shots, { recursive: true })
 const page404 = { status: 404, body: '{}' }
-const DESIGN_REPLY = 'A warm, golden-hour film set: tungsten amber on deep charcoal, film-strip dividers.\n\n```skinshift\n' + JSON.stringify({
+const DESIGN_REPLY = 'A warm, golden-hour film set: tungsten amber on deep charcoal, film-strip dividers.\n\n```chameleon\n' + JSON.stringify({
   name: 'Golden Hour', motif: 'film', mode: 'dark',
   palette: { bg: '#15120e', surface: '#1d1914', surfaceAlt: '#27211a', text: '#f4ead8', textMuted: '#a8997f', accent: '#f2a541', accent2: '#e05d44', positive: '#7cb36b', negative: '#e05d44', border: '#3a3126' },
   pattern: 'filmstrip', icons: ['movie', 'camera', 'bulb', 'microphone-2', 'video', 'aperture'], logoIcon: 'movie', glyphs: ['🎬', '🎥', '💡', '🎙️', '🎞️'],
@@ -28,7 +28,7 @@ const chats = {
   'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb': { project: '22222222-2222-4222-8222-222222222222', text: 'Stream the order book over a websocket.' },
   'cccccccc-cccc-4ccc-8ccc-cccccccccccc': { project: null, text: 'What is the capital of Peru?' },
   // a chat where Claude answered "Design with Claude" (its reply arrives after the request is sent)
-  'dddddddd-dddd-4ddd-8ddd-dddddddddddd': { project: '11111111-1111-4111-8111-111111111111', text: 'Design a Skinshift theme for this project', reply: DESIGN_REPLY },
+  'dddddddd-dddd-4ddd-8ddd-dddddddddddd': { project: '11111111-1111-4111-8111-111111111111', text: 'Design a Chameleon theme for this project', reply: DESIGN_REPLY },
   // each project's oldest chat holds its first prompt
   'f1111111-1111-4111-8111-111111111111': { project: '11111111-1111-4111-8111-111111111111', text: projects['11111111-1111-4111-8111-111111111111'].first },
   'f2222222-2222-4222-8222-222222222222': { project: '22222222-2222-4222-8222-222222222222', text: projects['22222222-2222-4222-8222-222222222222'].first },
@@ -51,7 +51,7 @@ function api(path) {
 }
 
 const ext = join(root, 'extension')
-const context = await chromium.launchPersistentContext(mkdtempSync(join(tmpdir(), 'skinshift-e2e-')), {
+const context = await chromium.launchPersistentContext(mkdtempSync(join(tmpdir(), 'chameleon-e2e-')), {
   // the full Chromium build: the headless shell cannot load extensions
   channel: 'chromium',
   headless: true,
@@ -74,7 +74,7 @@ const check = (ok, what) => {
   console.log(`${ok ? 'ok  ' : 'FAIL'} ${what}`)
   if (!ok) failures.push(what)
 }
-const themeId = () => page.evaluate(() => document.documentElement.getAttribute('data-skinshift'))
+const themeId = () => page.evaluate(() => document.documentElement.getAttribute('data-chameleon'))
 const bg = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor)
 const waitTheme = async expected => {
   for (let i = 0; i < 60; i++) {
@@ -111,11 +111,11 @@ await waitTheme('video-editor-app')
 const [worker] = context.serviceWorkers()
 const composed = await worker.evaluate(async () => {
   const [tab] = await chrome.tabs.query({ url: 'https://claude.ai/*' })
-  return chrome.tabs.sendMessage(tab.id, { type: 'compose', text: 'Design a Skinshift theme for this project' })
+  return chrome.tabs.sendMessage(tab.id, { type: 'compose', text: 'Design a Chameleon theme for this project' })
 }).catch(e => ({ error: String(e) }))
 check(composed?.ok === true, 'the design request is placed in the chat composer')
-check((await page.textContent('.composer .input')).includes('Design a Skinshift theme'), 'the composer holds the request, ready to send')
-// ...and when Claude's reply with a ```skinshift block lands, the project switches to it.
+check((await page.textContent('.composer .input')).includes('Design a Chameleon theme'), 'the composer holds the request, ready to send')
+// ...and when Claude's reply with a ```chameleon block lands, the project switches to it.
 replyArrived = true
 const designed = await (async () => { for (let i = 0; i < 80; i++) { if ((await themeId()) === 'golden-hour') return 'golden-hour'; await page.waitForTimeout(100) } return themeId() })()
 check(designed === 'golden-hour', `Claude's design replaces the starter theme (${designed})`)

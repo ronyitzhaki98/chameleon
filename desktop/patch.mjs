@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 // EXPERIMENTAL, UNOFFICIAL. Patches an installed Claude Desktop so it loads the
-// Skinshift injector. Read docs/desktop.md before running it.
+// Chameleon injector. Read docs/desktop.md before running it.
 //
 //   node desktop/patch.mjs status    [--app <path to app.asar>]
 //   node desktop/patch.mjs install   [--app <path>] [--force]
 //   node desktop/patch.mjs uninstall [--app <path>]
 //
 // What it does: backs up app.asar, extracts it, copies desktop/injector.cjs,
-// the claude.ai detector and /core into <app>/skinshift/, adds one guarded
+// the claude.ai detector and /core into <app>/chameleon/, adds one guarded
 // require line to the top of the app's main entry, and repacks.
 //
 // Why it is opt-in: on macOS and Windows, Electron's ASAR integrity check
@@ -24,8 +24,8 @@ import { fileURLToPath } from 'node:url'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const repo = join(here, '..')
-const MARK = '/* skinshift */'
-const LINE = `${MARK} try { require('./skinshift/injector.cjs').install() } catch (e) { console.warn('skinshift', e) }\n`
+const MARK = '/* chameleon */'
+const LINE = `${MARK} try { require('./chameleon/injector.cjs').install() } catch (e) { console.warn('chameleon', e) }\n`
 
 function arg(name) {
   const i = process.argv.indexOf(name)
@@ -60,7 +60,7 @@ function findAsar() {
 }
 
 function extract(archive) {
-  const dir = mkdtempSync(join(tmpdir(), 'skinshift-'))
+  const dir = mkdtempSync(join(tmpdir(), 'chameleon-'))
   asar('extract', archive, dir)
   const pkg = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8'))
   return { dir, main: join(dir, pkg.main || 'index.js') }
@@ -68,7 +68,7 @@ function extract(archive) {
 
 const command = process.argv[2] || 'status'
 const archive = findAsar()
-const backup = `${archive}.skinshift-backup`
+const backup = `${archive}.chameleon-backup`
 
 if (command === 'status') {
   const { dir, main } = extract(archive)
@@ -85,14 +85,14 @@ if (command === 'status') {
     console.log('Already patched.')
   } else {
     if (!existsSync(backup)) copyFileSync(archive, backup)
-    const target = join(dir, 'skinshift')
+    const target = join(dir, 'chameleon')
     cpSync(join(repo, 'core'), join(target, 'core'), { recursive: true })
     writeFileSync(join(target, 'core', 'package.json'), '{ "type": "module" }\n')
     copyFileSync(join(here, 'injector.cjs'), join(target, 'injector.cjs'))
     copyFileSync(join(here, 'detect.generated.cjs'), join(target, 'detect.generated.cjs'))
-    const rel = dirname(main) === dir ? './skinshift/injector.cjs' : `${'../'.repeat(main.slice(dir.length + 1).split(/[\\/]/).length - 1)}skinshift/injector.cjs`
+    const rel = dirname(main) === dir ? './chameleon/injector.cjs' : `${'../'.repeat(main.slice(dir.length + 1).split(/[\\/]/).length - 1)}chameleon/injector.cjs`
     const shebang = source.startsWith('#!') ? source.slice(0, source.indexOf('\n') + 1) : ''
-    writeFileSync(main, shebang + LINE.replace('./skinshift/injector.cjs', rel) + source.slice(shebang.length))
+    writeFileSync(main, shebang + LINE.replace('./chameleon/injector.cjs', rel) + source.slice(shebang.length))
     asar('pack', dir, archive)
     console.log(`Patched ${archive}. Backup at ${backup}. Restart Claude Desktop.`)
   }

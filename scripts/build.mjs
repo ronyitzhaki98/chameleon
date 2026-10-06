@@ -26,7 +26,7 @@ const detect = readFileSync(join(core, 'claudeai-detect.js'), 'utf8')
   .replace(/^export async function detectClaudeAiProject/m, 'async function detectClaudeAiProject')
 writeFileSync(
   join(root, 'extension/detect.js'),
-  `${banner}(() => {\n${detect}\nglobalThis.SkinshiftDetect = detectClaudeAiProject\n})()\n`,
+  `${banner}(() => {\n${detect}\nglobalThis.ChameleonDetect = detectClaudeAiProject\n})()\n`,
 )
 // Claude Desktop: an expression for webContents.executeJavaScript that resolves the project info.
 writeFileSync(
