@@ -24,9 +24,9 @@ const onClaude = /^https:\/\/claude\.ai\//.test(tab?.url || '')
 if (!state) {
   $('design').disabled = $('off').disabled = true
   if (onClaude && !reachable) $('status').textContent = 'Refresh this claude.ai tab once so Chameleon can load into it.'
-  else if (onClaude) $('status').textContent = 'Open a chat inside a project (or a project page).'
+  else if (onClaude) $('status').textContent = 'Open a chat inside a project, a project page, or a Claude Code session.'
 } else {
-  const where = state.info.kind === 'project' ? 'Project' : 'Chat'
+  const where = state.info.kind === 'project' ? 'Project' : state.info.kind === 'code' ? 'Claude Code' : 'Chat'
   const source = state.theme?.source === 'claude' ? 'designed by Claude' : 'starter theme'
   $('status').textContent = state.theme
     ? `${where}: ${state.info.name || 'untitled'} · ${source}`

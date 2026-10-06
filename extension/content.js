@@ -71,7 +71,8 @@
   }
 
   async function refresh(force = false) {
-    const path = location.pathname
+    const onCode = /^\/code\/session_/.test(location.pathname)
+    const path = location.pathname + (onCode ? `|${codeSignature()}` : '')
     if (!force && path === lastPath) return
     lastPath = path
     const mine = ++seq
@@ -84,6 +85,7 @@
       console.warn('[chameleon] project lookup failed, reading the page instead:', lastError)
       info = detectFromPage()
     }
+    if (!info && onCode) info = detectCodeSession()
     if (mine !== seq) return
     const sameDesign = (info?.design?.id || null) === (current?.info?.design?.id || null)
     if (info && current?.theme && current.info.key === info.key && sameDesign && !force) return
@@ -109,17 +111,72 @@
     return { kind: 'project', key: `project:${id}`, name, idea: name, design: null, viaPage: true }
   }
 
+  // Claude Code on the web (claude.ai/code/session_…): there is no project, so
+  // the repository the session works in plays that part, and the session's
+  // title (Claude names it after the first prompt) is the idea.
+  function sessionTitle() {
+    return document.title.replace(/\s*[|·–—-]\s*Claude(\s+Code)?\s*$/i, '').trim()
+  }
+
+  const REPO = /^([A-Za-z0-9][\w.-]*)\/([A-Za-z][\w.-]*)$/
+  function findRepo() {
+    const link = [...document.querySelectorAll('a[href*="github.com/"]')]
+      .map(a => a.getAttribute('href').match(/github\.com\/([\w.-]+)\/([\w.-]+)/))
+      .find(m => m && !['apps', 'settings', 'orgs', 'login'].includes(m[1]))
+    if (link) return { repo: `${link[1]}/${link[2].replace(/\.git$/, '')}`, via: 'link' }
+    if (!document.body) return null
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT)
+    for (let n = walker.nextNode(), i = 0; n && i < 6000; n = walker.nextNode(), i++) {
+      const text = n.textContent.trim()
+      if (text.length < 80 && REPO.test(text) && !n.parentElement.closest('pre, code, [contenteditable="true"]')) return { repo: text, via: 'text' }
+    }
+    return null
+  }
+
+  // The latest ```chameleon block Claude wrote in the session, as rendered.
+  function codeDesign() {
+    const blocks = [...document.querySelectorAll('pre')].map(p => p.textContent.trim()).filter(t => t.startsWith('{') && t.includes('"palette"'))
+    const text = blocks.pop()
+    if (!text) return null
+    let h = 0
+    for (let i = 0; i < text.length; i++) h = (h * 31 + text.charCodeAt(i)) | 0
+    return { id: `dom-${(h >>> 0).toString(36)}`, text: '```chameleon\n' + text + '\n```' }
+  }
+
+  function codeSignature() {
+    const repo = findRepo()
+    return `${sessionTitle()}|${repo?.repo || ''}|${codeDesign()?.id || ''}`
+  }
+
+  function detectCodeSession() {
+    const session = location.pathname.match(/^\/code\/(session_[\w-]+)/)?.[1]
+    if (!session) return null
+    const title = sessionTitle()
+    const found = findRepo()
+    const repoName = found?.repo.split('/')[1] || ''
+    if (!title && !found) return null
+    return {
+      kind: 'code',
+      key: found ? `repo:${found.repo.toLowerCase()}` : `code:${session}`,
+      name: repoName || title,
+      idea: title && repoName ? `${title} (${repoName})` : title || repoName,
+      design: codeDesign(),
+      viaPage: true,
+      repoVia: found?.via || null,
+    }
+  }
+
   function diagnose() {
     const html = document.documentElement
     const page = readPage()
     const colorish = Object.entries(page.root).filter(([, v]) => /^#|^\d+(\.\d+)?(deg)?\s+[\d.]+%|^(rgb|hsl|oklch)/i.test(v))
     return {
       extension: chrome.runtime.getManifest().version,
-      path: location.pathname.replace(/[0-9a-f-]{36}/g, '<id>'),
+      path: location.pathname.replace(/[0-9a-f-]{36}/g, '<id>').replace(/session_\w+/, 'session_<id>'),
       html: { class: html.className, mode: html.getAttribute('data-mode'), theme: html.getAttribute('data-theme'), applied: html.getAttribute('data-chameleon') },
       styleTag: Boolean(document.getElementById(STYLE_ID)),
       detect: current?.info
-        ? { kind: current.info.kind, via: current.info.viaPage ? 'page' : 'api', nameChars: (current.info.name || '').length, ideaChars: (current.info.idea || '').length, hasDesign: Boolean(current.info.design) }
+        ? { kind: current.info.kind, via: current.info.viaPage ? 'page' : 'api', nameChars: (current.info.name || '').length, ideaChars: (current.info.idea || '').length, hasDesign: Boolean(current.info.design), repoVia: current.info.repoVia ?? undefined }
         : null,
       lookupError: lastError,
       resolve: lastResolve,
@@ -129,6 +186,7 @@
         sample: colorish.filter(([k]) => /surface|bg-|text-|accent|brand|gray-5/.test(k)).slice(0, 24),
         scopes: Object.fromEntries(Object.entries(page.scopes).map(([k, v]) => [k, Object.keys(v).length])),
       },
+      code: /^\/code\//.test(location.pathname) ? { titleChars: sessionTitle().length, repoFound: findRepo()?.via || null, githubLinks: document.querySelectorAll('a[href*="github.com/"]').length } : undefined,
       composer: Boolean(document.querySelector('div[contenteditable="true"], textarea')),
     }
   }

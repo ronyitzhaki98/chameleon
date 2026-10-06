@@ -140,6 +140,30 @@ check(JSON.stringify(await surfaces()) === JSON.stringify(stock), 'stock colors 
 await page.click('text=Video editor app')
 check((await waitTheme('golden-hour')) === 'golden-hour', 'the project page reuses its saved theme')
 
+// Claude Code on the web: the session's repository is the project.
+await page.click('text=Candlestick widget')
+const tabState = () => worker.evaluate(async () => {
+  const [tab] = await chrome.tabs.query({ url: 'https://claude.ai/*' })
+  return chrome.tabs.sendMessage(tab.id, { type: 'state' })
+})
+let codeState = null
+for (let i = 0; i < 60; i++) {
+  codeState = await tabState()
+  if (codeState?.info?.kind === 'code' && codeState.theme) break
+  await page.waitForTimeout(100)
+}
+const code = await themeId()
+check(Boolean(code) && code !== 'golden-hour', `a Claude Code session gets its own theme (${code})`)
+check(codeState?.info?.key === 'repo:ronyitzhaki98/bull-desk', `the session is keyed by its repo (${codeState?.info?.key})`)
+check(codeState?.theme?.motif === 'finance', `the session's title picks the motif (${codeState?.theme?.motif})`)
+await page.evaluate(json => {
+  const pre = document.createElement('pre')
+  pre.textContent = json
+  document.getElementById('code-reply').append(pre)
+}, DESIGN_REPLY.match(/```chameleon\n([\s\S]*?)\n```/)[1])
+const codeDesigned = await waitTheme('golden-hour')
+check(codeDesigned === 'golden-hour', `a design Claude writes in the session is picked up (${codeDesigned})`)
+
 // When claude.ai's internal API refuses us, the project is read from the page itself.
 apiDown = true
 await page.click('text=Order book feed')

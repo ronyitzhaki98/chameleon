@@ -53,6 +53,10 @@ Themes are designed with the session's own model access (no extra API key). The 
 2. Open `chrome://extensions`, turn on Developer mode, **Load unpacked**, pick the `extension/` folder.
 Every project gets a starter theme right away, picked from its first prompt (see `docs/preview.html`). For a custom one, open the popup and press **Design with Claude**: it puts a design request in your chat (optionally with your own notes on the look), you press send, and when Claude replies with its ```` ```chameleon ```` block the project switches to that design. The popup can also turn the theme off for a project.
 
+Claude Code on the web (`claude.ai/code`) works too: a session has no project, so its GitHub repository plays that part (every session in the same repo shares a theme) and the session title is the idea. If the page doesn't show the repo, the theme is per session.
+
+If nothing changes, refresh the claude.ai tab after installing or reloading the extension, then open the popup and press **Copy diagnostics**. The report has the page's color-token counts and what detection found, and no chat text.
+
 ### Claude Desktop
 
 See [docs/desktop.md](docs/desktop.md). In short: the desktop app has no theming or extension API, so the only route is patching the installed app. That is unsupported, breaks on every update and may conflict with Anthropic's terms, so it is opt-in and Linux-only for now.

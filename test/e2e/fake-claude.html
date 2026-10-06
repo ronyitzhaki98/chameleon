@@ -51,6 +51,8 @@
   <a href="/chat/bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb">Order book feed</a>
   <a href="/chat/dddddddd-dddd-4ddd-8ddd-dddddddddddd">Theme design</a>
   <a href="/chat/cccccccc-cccc-4ccc-8ccc-cccccccccccc">Random question</a>
+  <h2>Code</h2>
+  <a href="/code/session_01TestTradingBot">Candlestick widget</a>
 </nav>
 <main id="main"></main>
 </div>
@@ -63,6 +65,19 @@
   }
   function render() {
     const p = location.pathname
+    if (p.startsWith('/code/')) {
+      // Claude Code on the web: no project, a repo picker and a session title.
+      document.title = 'Build a candlestick chart widget for the trading dashboard - Claude Code'
+      document.querySelectorAll('nav a').forEach(a => a.classList.toggle('on', a.getAttribute('href') === p))
+      document.getElementById('main').innerHTML = `
+        <header><button class="repo"><span>ronyitzhaki98/bull-desk</span></button> <span>main</span></header>
+        <hr>
+        <div class="msg human">Build a candlestick chart widget for the trading dashboard</div>
+        <div class="msg" id="code-reply">Sure. I'll start with the OHLC data model.</div>
+        <div class="composer"><div class="input" contenteditable="true" data-placeholder="Reply…"></div><button class="send">Send</button></div>`
+      return
+    }
+    document.title = 'Claude'
     const chat = chats[p.split('/')[2]]
     const project = p.startsWith('/project/') ? (p.includes('1111') ? 'Video editor app' : 'Day trading app') : chat && chat[0]
     document.querySelectorAll('nav a').forEach(a => a.classList.toggle('on', a.getAttribute('href') === p))
