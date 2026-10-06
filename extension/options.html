@@ -1,0 +1,25 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Skinshift settings</title>
+<style>
+  body { font: 14px/1.5 system-ui, sans-serif; max-width: 560px; margin: 40px auto; padding: 0 16px; }
+  label { display: block; margin: 14px 0 4px; font-weight: 600; }
+  input[type=text], input[type=password] { width: 100%; padding: 6px; box-sizing: border-box; }
+  .hint { color: #666; font-size: 12px; }
+</style>
+</head>
+<body>
+<h1>Skinshift</h1>
+<label for="apiKey">Anthropic API key</label>
+<input id="apiKey" type="password" autocomplete="off" placeholder="sk-ant-...">
+<div class="hint">Stored only in this browser (chrome.storage.local) and sent only to api.anthropic.com. Without a key, themes come from the built-in motif library.</div>
+<label for="model">Design model</label>
+<input id="model" type="text">
+<label><input id="auto" type="checkbox"> Theme new projects automatically from their first prompt</label>
+<label><input id="themeChats" type="checkbox"> Also theme chats that are not in a project</label>
+<p><button id="save">Save</button> <span id="saved" class="hint"></span></p>
+<script src="options.js"></script>
+</body>
+</html>

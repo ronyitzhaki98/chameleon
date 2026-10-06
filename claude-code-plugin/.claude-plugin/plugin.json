@@ -1,0 +1,29 @@
+{
+  "name": "skinshift",
+  "version": "0.1.0",
+  "description": "Generates a theme for each project from its first prompt and switches Claude Code's colors, line styles and icons to match.",
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "model": {
+      "type": "string",
+      "title": "Design model",
+      "description": "Model alias used to design themes",
+      "default": "sonnet",
+      "options": [
+        "sonnet",
+        "haiku",
+        "opus"
+      ]
+    },
+    "auto": {
+      "type": "boolean",
+      "title": "Theme new projects automatically",
+      "description": "Design a theme from a project's first prompt",
+      "default": true
+    }
+  },
+  "author": {
+    "name": "Ron",
+    "url": "https://github.com/ronyitzhaki98"
+  }
+}
